@@ -10,19 +10,31 @@ class HomePage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Willkommen zurück",
-            style: TextStyle(fontSize: 24, fontStyle: FontStyle.italic),
+          Text(
+            "Willkommen zurück 🍺",
+            style: TextStyle(
+              fontSize: 24,
+              fontStyle: FontStyle.italic,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
-          const Text("Petar Kukic", style: TextStyle(fontSize: 32.0)),
+          const SizedBox(height: 8),
+          Text(
+            "FeierabendBierchen",
+            style: TextStyle(
+              fontSize: 32.0,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
           const SizedBox(height: 20),
           Card(
             elevation: 4.0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Padding(
-              padding: EdgeInsets.all(10.0),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Row(
                 children: [
                   Expanded(
@@ -31,15 +43,30 @@ class HomePage extends StatelessWidget {
                       children: [
                         Text(
                           "Heutiger Bierkonsum",
-                          style: TextStyle(fontSize: 16),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                         ),
-                        Text("Anz. an Getränken: 3"),
-                        Text("Promille im Blut - JETZT: 0.5‰"),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Anz. an Getränken: 3",
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        Text(
+                          "Promille im Blut - JETZT: 0.5‰",
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Theme.of(context).colorScheme.tertiary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  SizedBox(
-                    width: 100, // Adjusted size for better layout
+                  const SizedBox(
+                    width: 100,
                     height: 100,
                     child: Image(
                       image: AssetImage('assets/consumed-beer.png'),

@@ -46,14 +46,8 @@ class UserProfile {
     };
   }
 
-  // Hilfsmethode: Avatar URL bekommen (mit Fallback)
-  String getAvatarUrl() {
-    if (imageUrl != null && imageUrl!.isNotEmpty) {
-      return imageUrl!;
-    }
-    
-    // Default Avatar wenn kein Bild hochgeladen
-    String bgColor = gender == 'male' ? '0D47A1' : 'E91E63';
-    return 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(name)}&background=$bgColor&color=fff&size=512';
+  // Hilfsmethode: Prüfen ob Profilbild vorhanden
+  bool hasImage() {
+    return imageUrl != null && imageUrl!.isNotEmpty;
   }
 }
