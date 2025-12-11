@@ -6,6 +6,7 @@ import 'package:feierabendbierchen_flutter/models/user_profile.dart';
 import 'package:feierabendbierchen_flutter/pages/home/home_page.dart';
 import 'package:feierabendbierchen_flutter/pages/beer/beer_page.dart';
 import 'package:feierabendbierchen_flutter/pages/profile/profile_page.dart';
+import 'package:feierabendbierchen_flutter/pages/profile/login_page.dart';
 import 'package:feierabendbierchen_flutter/pages/profile/user_profile_setup_page.dart';
 
 class MyHomePage extends StatefulWidget {
@@ -19,7 +20,6 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
-  bool _shouldNavigateToBeer = false; // Flag für Navigation zur Bierseite nach Profil-Setup
 
   // ===== NEU: Profil-Verwaltung =====
   final BeerFirestoreService _firestoreService = BeerFirestoreService();
@@ -63,15 +63,7 @@ class _MyHomePageState extends State<MyHomePage> {
   // ===== NEU: Callback wenn Profil erstellt wurde =====
   void _onProfileComplete() {
     // Nach Profil-Setup neu laden
-    _checkUserProfile().then((_) {
-      // Wenn User auf Bier geklickt hat, zur Bierseite navigieren
-      if (_shouldNavigateToBeer && _userProfile != null) {
-        setState(() {
-          _selectedIndex = 1; // Bierseite ist Index 1 wenn eingeloggt
-        });
-        _shouldNavigateToBeer = false;
-      }
-    });
+    _checkUserProfile();
   }
 
   void _showProfileSetupIfNeeded() {
@@ -127,38 +119,30 @@ class _MyHomePageState extends State<MyHomePage> {
       // Eingeloggt: Home, Bier, Profile
       pages = [
         const HomePage(),
-        _userProfile != null 
-            ? const BeerPage() 
-            : _buildBeerPagePlaceholder(),
+        const BeerPage(), // Bier-Seite immer anzeigen, unabhängig vom Profil
         const ProfilePage(),
       ];
     } else {
-      // Nicht eingeloggt: Home, Profile
+      // Nicht eingeloggt: Home, Bier (Login-Platzhalter), Profile
       pages = [
         const HomePage(),
+        _buildBeerLoginPlaceholder(),
         const ProfilePage(),
       ];
     }
 
     void onItemTapped(int index) {
-      if (widget.isLoggedIn) {
-        // Eingeloggt: Index 0=Home, 1=Bier, 2=Profile
-        if (index == 1 && _userProfile == null) {
-          // Wenn auf Bier geklickt wird ohne Profil, zeige Profil-Setup
-          _shouldNavigateToBeer = true; // Flag setzen für Navigation nach Setup
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            builder: (context) => UserProfileSetupPage(
-              firestoreService: _firestoreService,
-              onProfileComplete: _onProfileComplete,
-            ),
+      if (!widget.isLoggedIn) {
+        // Nicht eingeloggt: Index 0=Home, 1=Bier(Login), 2=Profile
+        if (index == 1) {
+          setState(() => _selectedIndex = 1); // Bier-Tab aktiv lassen
+          // Hinweis/Login öffnen
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginPage()),
           );
           return;
         }
-      } else {
-        // Nicht eingeloggt: Index 0=Home, 1=Profile
-        // Index bleibt gleich
       }
       
       setState(() {
@@ -181,12 +165,11 @@ class _MyHomePageState extends State<MyHomePage> {
         type: BottomNavigationBarType.fixed,
         items: [
           const BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          // Bierseite immer anzeigen wenn eingeloggt
-          if (widget.isLoggedIn)
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.local_drink),
-              label: "Bierchen",
-            ),
+          // Bierseite immer anzeigen
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.local_drink),
+            label: "Bierchen",
+          ),
           const BottomNavigationBarItem(
             icon: Icon(Icons.account_circle),
             label: "Account",
@@ -196,8 +179,9 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  // Platzhalter für Bierseite wenn kein Profil existiert
-  Widget _buildBeerPagePlaceholder() {
+
+  // Platzhalter wenn nicht eingeloggt
+  Widget _buildBeerLoginPlaceholder() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -207,35 +191,30 @@ class _MyHomePageState extends State<MyHomePage> {
             size: 64,
             color: Theme.of(context).colorScheme.primary,
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
-            'Profil erforderlich 🍺',
+            'Bitte einloggen 🍺',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Theme.of(context).colorScheme.primary,
             ),
           ),
-          SizedBox(height: 8),
-          Text(
-            'Bitte vervollständige dein Profil, um die Bierseite zu nutzen.',
+          const SizedBox(height: 8),
+          const Text(
+            'Melde dich an, um die Bierseite zu nutzen.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey[600]),
           ),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                builder: (context) => UserProfileSetupPage(
-                  firestoreService: _firestoreService,
-                  onProfileComplete: _onProfileComplete,
-                ),
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginPage()),
               );
             },
-            icon: Icon(Icons.person_add),
-            label: Text('Profil einrichten'),
+            icon: const Icon(Icons.login),
+            label: const Text('Jetzt einloggen'),
           ),
         ],
       ),
