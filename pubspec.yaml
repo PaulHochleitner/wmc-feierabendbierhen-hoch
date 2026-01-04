@@ -41,6 +41,8 @@ dependencies:
   firebase_ui_oauth_google: ^2.0.1
   image_picker: ^1.2.1
   firebase_storage: ^13.0.4
+  fl_chart: ^1.1.1
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:

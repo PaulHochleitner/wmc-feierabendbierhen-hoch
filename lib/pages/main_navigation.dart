@@ -1,10 +1,12 @@
 // lib/pages/main_navigation.dart (umbenennen von MyHomePage)
 import 'package:flutter/material.dart';
+import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:feierabendbierchen_flutter/services/beer_firestore_service.dart';
 import 'package:feierabendbierchen_flutter/models/user_profile.dart';
 import 'package:feierabendbierchen_flutter/pages/home/home_page.dart';
 import 'package:feierabendbierchen_flutter/pages/beer/beer_page.dart';
+import 'package:feierabendbierchen_flutter/pages/statistik/statisitk_page.dart';
 import 'package:feierabendbierchen_flutter/pages/profile/profile_page.dart';
 import 'package:feierabendbierchen_flutter/pages/profile/login_page.dart';
 import 'package:feierabendbierchen_flutter/pages/profile/user_profile_setup_page.dart';
@@ -18,7 +20,7 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
 
   // ===== NEU: Profil-Verwaltung =====
@@ -27,15 +29,41 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _isLoadingProfile = true;
   bool _needsProfileSetup = false;
 
+  // Animation für Navbar
+  late AnimationController _controller;
+  final List<Bubble> _bubbles = [];
+  final Random _random = Random();
+
   @override
   void initState() {
     super.initState();
+    
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
+
+    for (int i = 0; i < 20; i++) {
+      _bubbles.add(Bubble(
+        x: _random.nextDouble(),
+        y: _random.nextDouble(),
+        size: 2 + _random.nextDouble() * 4,
+        speed: 0.3 + _random.nextDouble() * 0.7,
+      ));
+    }
+
     // ===== NEU: Profil beim Start laden =====
     if (widget.isLoggedIn) {
       _checkUserProfile();
     } else {
       setState(() => _isLoadingProfile = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   // ===== NEU: Profil-Check Methode =====
@@ -87,19 +115,21 @@ class _MyHomePageState extends State<MyHomePage> {
     // ===== Loading Screen =====
     if (_isLoadingProfile) {
       return Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        backgroundColor: const Color(0xFF12100E),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               CircularProgressIndicator(
-                color: Theme.of(context).colorScheme.primary,
+                color: const Color(0xFFFFD700),
               ),
               SizedBox(height: 16),
               Text(
-                'Profil wird geladen... 🍺',
+                'SYSTEM BOOT... 🍺',
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
+                  color: const Color(0xFFFFD700),
+                  fontFamily: 'Courier',
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
@@ -120,6 +150,7 @@ class _MyHomePageState extends State<MyHomePage> {
       pages = [
         const HomePage(),
         const BeerPage(), // Bier-Seite immer anzeigen, unabhängig vom Profil
+        const StatistikPage(),
         const ProfilePage(),
       ];
     } else {
@@ -127,14 +158,15 @@ class _MyHomePageState extends State<MyHomePage> {
       pages = [
         const HomePage(),
         _buildBeerLoginPlaceholder(),
+        const SizedBox(), // Placeholder for Stats
         const ProfilePage(),
       ];
     }
 
     void onItemTapped(int index) {
       if (!widget.isLoggedIn) {
-        // Nicht eingeloggt: Index 0=Home, 1=Bier(Login), 2=Profile
-        if (index == 1) {
+        // Nicht eingeloggt: Index 0=Home, 1=Bier(Login), 2=Stats, 3=Profile
+        if (index == 1 || index == 2) {
           setState(() => _selectedIndex = 1); // Bier-Tab aktiv lassen
           // Hinweis/Login öffnen
           Navigator.push(
@@ -151,30 +183,97 @@ class _MyHomePageState extends State<MyHomePage> {
     }
 
     return Scaffold(
+      extendBody: true, // Important for transparent bottom bar
       appBar: AppBar(
-        title: const Text("FeierabendBierchen"),
+        title: const Text("FEIERABEND BIERCHEN", style: TextStyle(color: Colors.black)),
         centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
-        child: pages[_selectedIndex],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        items: [
-          const BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          // Bierseite immer anzeigen
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.local_drink),
-            label: "Bierchen",
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+              colors: [
+                Color(0xFFFFA000), // Dunkles Amber
+                Color(0xFFFFC107), // Gold
+              ],
+            ),
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle),
-            label: "Account",
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return CustomPaint(
+                painter: BubblePainter(
+                  bubbles: _bubbles,
+                  animationValue: _controller.value,
+                ),
+                size: Size.infinite,
+              );
+            },
           ),
-        ],
+        ),
+        titleTextStyle: TextStyle(
+          color: Colors.black,
+          fontWeight: FontWeight.bold,
+          fontSize: 22,
+          letterSpacing: 1.5,
+        ),
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF12100E), // Deep Beer Black
+              Color(0xFF251D18), // Dark Roasted Malt
+            ],
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+          child: pages[_selectedIndex],
+        ),
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF12100E).withOpacity(0.95),
+          border: Border(top: BorderSide(color: const Color(0xFF8D6E63).withOpacity(0.3))),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF000000).withOpacity(0.5),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: onItemTapped,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          selectedItemColor: const Color(0xFFFFD700),
+          unselectedItemColor: Colors.grey[600],
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+          items: [
+            const BottomNavigationBarItem(icon: Icon(Icons.home), label: "HOME"),
+            // Bierseite immer anzeigen
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.local_drink),
+              label: "BIER",
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.bar_chart),
+              label: "STATS",
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.account_circle),
+              label: "ACCOUNT",
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -189,21 +288,23 @@ class _MyHomePageState extends State<MyHomePage> {
           Icon(
             Icons.local_drink,
             size: 64,
-            color: Theme.of(context).colorScheme.primary,
+            color: const Color(0xFFFFD700),
           ),
           const SizedBox(height: 16),
           Text(
-            'Bitte einloggen 🍺',
+            'ZUGRIFF VERWEIGERT 🍺',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
+              color: Colors.redAccent,
+              letterSpacing: 1.5,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Melde dich an, um die Bierseite zu nutzen.',
+          Text(
+            'Authentifizierung erforderlich für Bier-Tracking.',
             textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey[400]),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
@@ -214,7 +315,12 @@ class _MyHomePageState extends State<MyHomePage> {
               );
             },
             icon: const Icon(Icons.login),
-            label: const Text('Jetzt einloggen'),
+            label: const Text('LOGIN PROTOKOLL'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFD700).withOpacity(0.1),
+              foregroundColor: const Color(0xFFFFD700),
+              side: const BorderSide(color: Color(0xFF8D6E63)),
+            ),
           ),
         ],
       ),

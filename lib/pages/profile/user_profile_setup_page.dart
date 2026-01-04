@@ -210,7 +210,8 @@ class _UserProfileSetupPageState extends State<UserProfileSetupPage> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
+                  color: const Color(0xFFFFD700),
+                  boxShadow: [BoxShadow(color: const Color(0xFFFFD700), blurRadius: 5)],
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -220,27 +221,33 @@ class _UserProfileSetupPageState extends State<UserProfileSetupPage> {
                 child: Row(
                   children: [
                     Text(
-                      'Profil einrichten 🍺',
+                      'PROFIL KONFIGURATION 🍺',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: const Color(0xFFFFD700),
+                        letterSpacing: 1.2,
                       ),
                     ),
                     Spacer(),
                     IconButton(
-                      icon: Icon(Icons.close),
+                      icon: Icon(Icons.close, color: Colors.white),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
                 ),
               ),
-              Divider(),
+              Divider(color: const Color(0xFF8D6E63).withOpacity(0.3)),
               // Content
               Expanded(
                 child: SingleChildScrollView(
                   controller: scrollController,
                   padding: EdgeInsets.all(24.0),
+                  child: Theme(
+                    data: ThemeData.dark().copyWith(
+                      primaryColor: const Color(0xFFFFD700),
+                      colorScheme: ColorScheme.dark(primary: const Color(0xFFFFD700)),
+                    ),
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -250,19 +257,20 @@ class _UserProfileSetupPageState extends State<UserProfileSetupPage> {
                         
                         // Willkommenstext
                         Text(
-                          'Willkommen! 🍺',
+                          'WILLKOMMEN! 🍺',
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
+                            color: Colors.white,
+                            shadows: [Shadow(color: const Color(0xFFFFD700), blurRadius: 5)],
                           ),
                         ),
                         SizedBox(height: 8),
                         Text(
-                          'Vervollständige dein Profil',
+                          'Initialisiere Benutzerparameter...',
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.grey[600],
+                            color: const Color(0xFFD4AF37),
                           ),
                         ),
                         
@@ -274,21 +282,33 @@ class _UserProfileSetupPageState extends State<UserProfileSetupPage> {
                   children: [
                     GestureDetector(
                       onTap: _showImageSourceDialog,
-                      child: CircleAvatar(
-                        radius: 70,
-                        backgroundColor: Theme.of(context).colorScheme.surface,
-                        backgroundImage: _imageFile != null
-                            ? FileImage(_imageFile!)
-                            : _imageUrl != null
-                                ? NetworkImage(_imageUrl!)
-                                : null,
-                        child: _imageFile == null && _imageUrl == null
-                            ? Icon(
-                                Icons.local_drink,
-                                size: 70,
-                                color: Theme.of(context).colorScheme.primary,
-                              )
-                            : null,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFFFFD700), width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFFD700).withOpacity(0.2),
+                              blurRadius: 15,
+                            )
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 70,
+                          backgroundColor: const Color(0xFF1F1B16),
+                          backgroundImage: _imageFile != null
+                              ? FileImage(_imageFile!)
+                              : _imageUrl != null
+                                  ? NetworkImage(_imageUrl!)
+                                  : null,
+                          child: _imageFile == null && _imageUrl == null
+                              ? Icon(
+                                  Icons.local_drink,
+                                  size: 70,
+                                  color: const Color(0xFFFFD700),
+                                )
+                              : null,
+                        ),
                       ),
                     ),
                     if (_isUploadingImage)
@@ -296,7 +316,7 @@ class _UserProfileSetupPageState extends State<UserProfileSetupPage> {
                         child: CircleAvatar(
                           radius: 70,
                           backgroundColor: Colors.black54,
-                          child: CircularProgressIndicator(color: Colors.white),
+                          child: CircularProgressIndicator(color: const Color(0xFFFFD700)),
                         ),
                       ),
                     Positioned(
@@ -304,9 +324,10 @@ class _UserProfileSetupPageState extends State<UserProfileSetupPage> {
                       right: 0,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor,
+                          color: const Color(0xFFFFD700),
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
+                          border: Border.all(color: Colors.black, width: 2),
+                          boxShadow: [BoxShadow(color: const Color(0xFFFFD700), blurRadius: 5)],
                         ),
                         child: IconButton(
                           icon: Icon(Icons.camera_alt, color: Colors.white, size: 20),
@@ -321,7 +342,7 @@ class _UserProfileSetupPageState extends State<UserProfileSetupPage> {
               SizedBox(height: 12),
               Text(
                 'Tippe auf das Bild zum Ändern',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 12, color: Colors.grey[500]),
               ),
               
               SizedBox(height: 40),
@@ -329,12 +350,26 @@ class _UserProfileSetupPageState extends State<UserProfileSetupPage> {
               // Name
               TextFormField(
                 controller: _nameController,
+                style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   labelText: 'Benutzername',
+                  labelStyle: TextStyle(color: const Color(0xFFD4AF37)),
                   hintText: 'Wie möchtest du genannt werden?',
-                  prefixIcon: Icon(Icons.person),
+                  hintStyle: TextStyle(color: Colors.grey[500]),
+                  prefixIcon: Icon(Icons.person, color: const Color(0xFFFFD700)),
+                  filled: true,
+                  fillColor: const Color(0xFF12100E),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: const Color(0xFF8D6E63)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: const Color(0xFF8D6E63).withOpacity(0.5)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: const Color(0xFFFFD700), width: 1.5),
                   ),
                 ),
                 validator: (value) {
@@ -353,13 +388,28 @@ class _UserProfileSetupPageState extends State<UserProfileSetupPage> {
               // Gewicht
               TextFormField(
                 controller: _weightController,
+                style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   labelText: 'Gewicht (kg)',
+                  labelStyle: TextStyle(color: const Color(0xFFD4AF37)),
                   hintText: 'Für genaue Promille-Berechnung',
-                  prefixIcon: Icon(Icons.monitor_weight),
+                  hintStyle: TextStyle(color: Colors.grey[500]),
+                  prefixIcon: Icon(Icons.monitor_weight, color: const Color(0xFFFFD700)),
                   suffixText: 'kg',
+                  suffixStyle: TextStyle(color: const Color(0xFFFFD700)),
+                  filled: true,
+                  fillColor: const Color(0xFF12100E),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: const Color(0xFF8D6E63)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: const Color(0xFF8D6E63).withOpacity(0.5)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: const Color(0xFFFFD700), width: 1.5),
                   ),
                 ),
                 keyboardType: TextInputType.number,
@@ -381,7 +431,8 @@ class _UserProfileSetupPageState extends State<UserProfileSetupPage> {
               Container(
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[400]!),
+                  color: const Color(0xFF12100E),
+                  border: Border.all(color: const Color(0xFF8D6E63).withOpacity(0.5)),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -392,7 +443,7 @@ class _UserProfileSetupPageState extends State<UserProfileSetupPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Colors.grey[700],
+                        color: const Color(0xFFD4AF37),
                       ),
                     ),
                     SizedBox(height: 12),
@@ -422,7 +473,7 @@ class _UserProfileSetupPageState extends State<UserProfileSetupPage> {
               SizedBox(height: 12),
               Text(
                 'Wird für die Promille-Berechnung verwendet',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 12, color: Colors.grey[500]),
               ),
               
               SizedBox(height: 40),
@@ -434,19 +485,23 @@ class _UserProfileSetupPageState extends State<UserProfileSetupPage> {
                 child: ElevatedButton(
                   onPressed: _isLoading || _isUploadingImage ? null : _saveProfile,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).primaryColor,
-                    foregroundColor: Colors.white,
+                    backgroundColor: const Color(0xFFFFD700).withOpacity(0.1),
+                    foregroundColor: const Color(0xFFFFD700),
+                    side: const BorderSide(color: Color(0xFFFFD700), width: 1),
+                    shadowColor: Colors.transparent,
+                    elevation: 8,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: _isLoading
-                      ? CircularProgressIndicator(color: Colors.white)
+                      ? CircularProgressIndicator(color: const Color(0xFFFFD700))
                       : Text(
-                          'Profil erstellen',
+                          'PROFIL ERSTELLEN',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
                           ),
                         ),
                 ),
@@ -455,6 +510,7 @@ class _UserProfileSetupPageState extends State<UserProfileSetupPage> {
                         SizedBox(height: 20),
                       ],
                     ),
+                  ),
                   ),
                 ),
               ),
@@ -477,26 +533,27 @@ class _UserProfileSetupPageState extends State<UserProfileSetupPage> {
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: isSelected ? Theme.of(context).primaryColor.withOpacity(0.1) : Colors.grey[100],
+          color: isSelected ? const Color(0xFFFFD700).withOpacity(0.1) : const Color(0xFF1F1B16),
           border: Border.all(
-            color: isSelected ? Theme.of(context).primaryColor : Colors.grey[300]!,
-            width: 2,
+            color: isSelected ? const Color(0xFFFFD700) : Colors.grey[800]!,
+            width: 1,
           ),
           borderRadius: BorderRadius.circular(12),
+          boxShadow: isSelected ? [BoxShadow(color: const Color(0xFFFFD700).withOpacity(0.1), blurRadius: 5)] : [],
         ),
         child: Column(
           children: [
             Icon(
               icon,
               size: 40,
-              color: isSelected ? Theme.of(context).primaryColor : Colors.grey[600],
+              color: isSelected ? const Color(0xFFFFD700) : Colors.grey[600],
             ),
             SizedBox(height: 8),
             Text(
               label,
               style: TextStyle(
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? Theme.of(context).primaryColor : Colors.grey[700],
+                color: isSelected ? const Color(0xFFFFD700) : Colors.grey[500],
               ),
             ),
           ],
