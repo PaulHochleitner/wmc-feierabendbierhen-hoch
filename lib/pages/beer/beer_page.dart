@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:feierabendbierchen_flutter/services/location_service.dart';
+import 'package:feierabendbierchen_flutter/pages/map/location_picker_page.dart';
 
 class BeerPage extends StatefulWidget {
   final ConsumedBeer? existingBeer;
@@ -122,11 +124,17 @@ class _BeerPageState extends State<BeerPage>
 
     double rating = beerToEdit?.rating.toDouble() ?? 5.0;
     DateTime selectedDate = beerToEdit?.date ?? DateTime.now();
+    
+    // Standort State
+    double? latitude = beerToEdit?.latitude;
+    double? longitude = beerToEdit?.longitude;
+    String? locationName = beerToEdit?.locationName;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: const Color(0xFF1F1B16),
+      constraints: const BoxConstraints(maxWidth: 600),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         side: BorderSide(color: Color(0xFF8D6E63), width: 1),
@@ -141,7 +149,8 @@ class _BeerPageState extends State<BeerPage>
                 top: 20,
                 bottom: MediaQuery.of(context).viewInsets.bottom + 20,
               ),
-              child: Column(
+              child: SingleChildScrollView(
+                child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -320,6 +329,78 @@ class _BeerPageState extends State<BeerPage>
 
                   const SizedBox(height: 24),
 
+                  // Standort Auswahl
+                  Text(
+                    "STANDORT",
+                    style: const TextStyle(
+                      color: Color(0xFFD4AF37),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: const Color(0xFF8D6E63)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          color: locationName != null ? Colors.redAccent : Colors.grey,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            locationName ?? "Kein Standort markiert",
+                            style: const TextStyle(color: Colors.white),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        // GPS Button
+                        IconButton(
+                          icon: const Icon(Icons.my_location, color: Color(0xFFFFD700)),
+                          tooltip: "Aktuellen Standort verwenden",
+                          onPressed: () async {
+                            final locService = LocationService();
+                            final pos = await locService.getCurrentLocation();
+                            if (pos != null) {
+                              final address = await locService.getAddressFromCoordinates(pos.latitude, pos.longitude);
+                              setModalState(() {
+                                latitude = pos.latitude;
+                                longitude = pos.longitude;
+                                locationName = address ?? "Mein Standort";
+                              });
+                            }
+                          },
+                        ),
+                        // Suche Button
+                        IconButton(
+                          icon: const Icon(Icons.map, color: Color(0xFFFFD700)),
+                          tooltip: "Karte öffnen",
+                          onPressed: () async {
+                            final result = await Navigator.push<Map<String, dynamic>>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => LocationPickerPage(),
+                              ),
+                            );
+                            
+                            if (result != null) {
+                              setModalState(() {
+                                latitude = result['lat'];
+                                longitude = result['lng'];
+                                locationName = result['name'];
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
                   // Bewertung
                   Text(
                     "GESCHMACK (1-10): ${rating.toInt()}",
@@ -369,6 +450,9 @@ class _BeerPageState extends State<BeerPage>
                                     percentage: selectedBeerData!['alc'],
                                     rating: rating.toInt(),
                                     date: selectedDate,
+                                    latitude: latitude,
+                                    longitude: longitude,
+                                    locationName: locationName,
                                   ).toMap();
 
                                   final collection = FirebaseFirestore.instance
@@ -408,6 +492,7 @@ class _BeerPageState extends State<BeerPage>
                     ],
                   ),
                 ],
+              ),
               ),
             );
           },
@@ -561,6 +646,9 @@ class ConsumedBeer {
   final double percentage;
   final int rating;
   final DateTime date;
+  final double? latitude;
+  final double? longitude;
+  final String? locationName;
 
   ConsumedBeer({
     this.id,
@@ -569,6 +657,9 @@ class ConsumedBeer {
     required this.percentage,
     required this.rating,
     required this.date,
+    this.latitude,
+    this.longitude,
+    this.locationName,
   });
 
   Map<String, dynamic> toMap() {
@@ -578,6 +669,9 @@ class ConsumedBeer {
       'percentage': percentage,
       'rating': rating,
       'date': Timestamp.fromDate(date),
+      'latitude': latitude,
+      'longitude': longitude,
+      'locationName': locationName,
     };
   }
 
@@ -590,6 +684,9 @@ class ConsumedBeer {
       percentage: (data['percentage'] ?? 0.0).toDouble(),
       rating: (data['rating'] ?? 0).toInt(),
       date: (data['date'] as Timestamp).toDate(),
+      latitude: data['latitude']?.toDouble(),
+      longitude: data['longitude']?.toDouble(),
+      locationName: data['locationName'],
     );
   }
 }
@@ -782,10 +879,12 @@ class _BeerListTileState extends State<BeerListTile> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.black54),
+                        tooltip: 'Eintrag bearbeiten',
                         onPressed: widget.onEdit,
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.redAccent),
+                        tooltip: 'Eintrag löschen',
                         onPressed: widget.onDelete,
                       ),
                     ],

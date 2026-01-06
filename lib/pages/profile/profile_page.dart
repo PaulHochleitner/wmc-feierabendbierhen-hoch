@@ -5,6 +5,7 @@ import 'package:feierabendbierchen_flutter/models/user_profile.dart';
 import 'package:feierabendbierchen_flutter/pages/profile/custom_login_page.dart';
 import 'package:feierabendbierchen_flutter/services/auth_service.dart';
 import 'package:feierabendbierchen_flutter/pages/profile/user_profile_setup_page.dart';
+import 'package:feierabendbierchen_flutter/l10n/app_localizations.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -30,13 +31,13 @@ class _ProfilePageState extends State<ProfilePage> {
       // Prüfe zuerst ob Gast-Modus aktiv ist
       final isGuest = await AuthService.isGuestMode();
       final user = FirebaseAuth.instance.currentUser;
-      
+
       if (mounted) {
         setState(() {
           _isGuestMode = isGuest;
         });
       }
-      
+
       if (isGuest) {
         // Gast-Modus - kein Profil laden
         if (mounted) {
@@ -46,7 +47,7 @@ class _ProfilePageState extends State<ProfilePage> {
         }
         return;
       }
-      
+
       if (user != null) {
         final profile = await _firestoreService.getUserProfile();
         if (mounted) {
@@ -213,13 +214,21 @@ class _ProfilePageState extends State<ProfilePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildFuturisticCard(Icons.person, 'Identität', profile.name),
-        _buildFuturisticCard(Icons.monitor_weight, 'Masse', '${profile.weight.toStringAsFixed(1)} kg'),
-        _buildFuturisticCard(Icons.height, 'Größe', '${profile.height.toStringAsFixed(0)} cm'),
+        _buildFuturisticCard(Icons.person, AppLocalizations.of(context).t('identity'), profile.name),
+        _buildFuturisticCard(
+          Icons.monitor_weight,
+          AppLocalizations.of(context).t('mass'),
+          '${profile.weight.toStringAsFixed(1)} kg',
+        ),
+        _buildFuturisticCard(
+          Icons.height,
+          AppLocalizations.of(context).t('height'),
+          '${profile.height.toStringAsFixed(0)} cm',
+        ),
         _buildFuturisticCard(
           profile.gender == 'male' ? Icons.male : Icons.female,
-          'Biologie',
-          profile.gender == 'male' ? 'Männlich' : 'Weiblich',
+          AppLocalizations.of(context).t('biology'),
+          profile.gender == 'male' ? AppLocalizations.of(context).t('male') : AppLocalizations.of(context).t('female'),
         ),
       ],
     );
@@ -249,7 +258,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (_userProfile == null) {
       // Bottom Navigation Bar Höhe (ca. 56-80px)
       final bottomPadding = MediaQuery.of(context).padding.bottom + 80;
-      
+
       return SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.fromLTRB(24.0, 24.0, 24.0, bottomPadding),
@@ -257,7 +266,7 @@ class _ProfilePageState extends State<ProfilePage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 20),
-              
+
               // Avatar mit Email
               Center(
                 child: Column(
@@ -289,7 +298,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Eingeloggt',
+                      AppLocalizations.of(context).t('logged_in'),
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[400],
@@ -299,9 +308,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // Info Box
               Container(
                 padding: const EdgeInsets.all(20),
@@ -324,7 +333,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Profil nicht vollständig',
+                            AppLocalizations.of(context).t('profile_incomplete'),
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -336,7 +345,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Gib deine Daten ein, um personalisierte Statistiken zu erhalten. Ohne Profil-Daten kannst du die App nutzen, aber keine personalisierten Statistiken sehen.',
+                      AppLocalizations.of(context).t('enter_data_info'),
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[400],
@@ -346,9 +355,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Profil erstellen Button
               ElevatedButton(
                 onPressed: _editProfile,
@@ -361,29 +370,26 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   elevation: 8,
                 ),
-                child: const Text(
-                  'PROFIL ERSTELLEN',
-                  style: TextStyle(
+                child: Text(
+                  AppLocalizations.of(context).t('create_profile'),
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.5,
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Optional: Später Button
               TextButton(
                 onPressed: () {
                   // Nichts tun - User kann später Profil erstellen
                 },
                 child: Text(
-                  'Später',
-                  style: TextStyle(
-                    color: Colors.grey[500],
-                    fontSize: 14,
-                  ),
+                  AppLocalizations.of(context).t('later'),
+                  style: TextStyle(color: Colors.grey[500], fontSize: 14),
                 ),
               ),
             ],
@@ -395,7 +401,7 @@ class _ProfilePageState extends State<ProfilePage> {
     // Eingeloggt mit Profil - Profil anzeigen
     // Bottom Navigation Bar Höhe (ca. 56-80px)
     final bottomPadding = MediaQuery.of(context).padding.bottom + 80;
-    
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
@@ -408,103 +414,109 @@ class _ProfilePageState extends State<ProfilePage> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const SizedBox(height: 20),
-                  // Header mit Avatar und Infos
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      children: [
-                        GestureDetector(
-                          onTap: _editProfile,
-                          child: Stack(
-                            children: [
-                              _buildAvatar(_userProfile!, radius: 40),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFFD700),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.black, width: 1.5),
+                    // Header mit Avatar und Infos
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: _editProfile,
+                            child: Stack(
+                              children: [
+                                _buildAvatar(_userProfile!, radius: 40),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFD700),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.black,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.camera_alt,
+                                      size: 14,
+                                      color: Colors.black,
+                                    ),
                                   ),
-                                  child: const Icon(Icons.camera_alt, size: 14, color: Colors.black),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 20),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _userProfile!.name,
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _userProfile!.name,
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                user.email ?? '',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFFD4AF37),
-                                  letterSpacing: 1.0,
+                                const SizedBox(height: 4),
+                                Text(
+                                  user.email ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFFD4AF37),
+                                    letterSpacing: 1.0,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 32),
-                  // Profil-Informationen
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildProfileInfo(_userProfile!),
-                  ),
-                  
-                  const Spacer(), // Drückt den Button nach unten
-                  
-                  // Abmelden Button
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 20.0),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _signOut,
-                        icon: const Icon(Icons.logout),
-                        label: const Text('SYSTEM DISCONNECT'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          foregroundColor: Colors.redAccent,
-                          side: const BorderSide(color: Colors.redAccent),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shadowColor: Colors.redAccent.withOpacity(0.5),
-                          elevation: 10,
+                    const SizedBox(height: 32),
+                    // Profil-Informationen
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildProfileInfo(_userProfile!),
+                    ),
+
+                    const Spacer(), // Drückt den Button nach unten
+                    // Abmelden Button
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 20.0),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _signOut,
+                          icon: const Icon(Icons.logout),
+                          label: Text(AppLocalizations.of(context).t('system_disconnect')),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            foregroundColor: Colors.redAccent,
+                            side: const BorderSide(color: Colors.redAccent),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shadowColor: Colors.redAccent.withOpacity(0.5),
+                            elevation: 10,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
                 ),
               ),
             ),
           ),
         );
-      }
+      },
     );
   }
 
   Widget _buildGuestScreen() {
     // Bottom Navigation Bar Höhe (ca. 56-80px)
     final bottomPadding = MediaQuery.of(context).padding.bottom + 80;
-    
+
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.fromLTRB(24.0, 24.0, 24.0, bottomPadding),
@@ -513,7 +525,7 @@ class _ProfilePageState extends State<ProfilePage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 20),
-            
+
             // Gast Icon
             Center(
               child: Container(
@@ -521,10 +533,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFD700).withOpacity(0.1),
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFFFFD700),
-                    width: 3,
-                  ),
+                  border: Border.all(color: const Color(0xFFFFD700), width: 3),
                 ),
                 child: const Icon(
                   Icons.person_outline,
@@ -533,12 +542,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Gast Status
             Text(
-              'ALS GAST',
+              AppLocalizations.of(context).t('as_guest'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 32,
@@ -553,9 +562,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Info Text
             Container(
               padding: const EdgeInsets.all(20),
@@ -569,7 +578,7 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 children: [
                   Text(
-                    'Im Gast-Modus werden deine Daten nicht gespeichert.',
+                    AppLocalizations.of(context).t('guest_mode_description'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
@@ -579,7 +588,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Erstelle einen Account, um deine Biere zu tracken und Statistiken zu sehen.',
+                    AppLocalizations.of(context).t('create_account_info'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
@@ -590,16 +599,17 @@ class _ProfilePageState extends State<ProfilePage> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 40),
-            
+
             // Account erstellen Button
             ElevatedButton(
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const CustomLoginPage(isRegisterMode: true),
+                    builder: (context) =>
+                        const CustomLoginPage(isRegisterMode: true),
                   ),
                 );
               },
@@ -612,18 +622,18 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 elevation: 8,
               ),
-              child: const Text(
-                'ACCOUNT ERSTELLEN',
-                style: TextStyle(
+              child: Text(
+                AppLocalizations.of(context).t('register_button'),
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Oder Divider
             Row(
               children: [
@@ -631,7 +641,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
-                    'ODER',
+                    AppLocalizations.of(context).t('or'),
                     style: TextStyle(
                       color: Colors.grey[500],
                       fontWeight: FontWeight.bold,
@@ -642,9 +652,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 Expanded(child: Divider(color: Colors.grey[700])),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Anmelden Button
             OutlinedButton(
               onPressed: () {
@@ -663,18 +673,18 @@ class _ProfilePageState extends State<ProfilePage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'ANMELDEN',
-                style: TextStyle(
+              child: Text(
+                AppLocalizations.of(context).t('login'),
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 40),
-            
+
             // Bier Icon
             Center(
               child: Container(
@@ -699,7 +709,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildLoginScreen() {
     // Bottom Navigation Bar Höhe (ca. 56-80px)
     final bottomPadding = MediaQuery.of(context).padding.bottom + 80;
-    
+
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.fromLTRB(24.0, 24.0, 24.0, bottomPadding),
@@ -707,7 +717,7 @@ class _ProfilePageState extends State<ProfilePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "IDENTIFIZIERUNG ERFORDERLICH 🍺",
+              AppLocalizations.of(context).t('identification_required'),
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -722,7 +732,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const SizedBox(height: 12),
             Text(
-              "Initialisiere Login-Protokoll für personalisierte Daten.",
+              AppLocalizations.of(context).t('init_login_protocol'),
               style: TextStyle(fontSize: 16, color: const Color(0xFFD7CCC8)),
             ),
             const SizedBox(height: 24),
@@ -730,16 +740,21 @@ class _ProfilePageState extends State<ProfilePage> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const CustomLoginPage()),
+                  MaterialPageRoute(
+                    builder: (context) => const CustomLoginPage(),
+                  ),
                 );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFFD700).withOpacity(0.1),
                 foregroundColor: const Color(0xFFFFD700),
                 side: const BorderSide(color: Color(0xFF8D6E63)),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
               ),
-              child: const Text("Login"),
+              child: Text(AppLocalizations.of(context).t('login_button')),
             ),
             const SizedBox(height: 24),
             const SizedBox(

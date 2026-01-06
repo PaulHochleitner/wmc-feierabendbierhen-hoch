@@ -5,6 +5,7 @@ import 'package:feierabendbierchen_flutter/services/beer_stats_service.dart';
 import 'package:feierabendbierchen_flutter/services/beer_firestore_service.dart';
 import 'package:feierabendbierchen_flutter/models/user_profile.dart';
 import 'package:intl/intl.dart';
+import 'package:feierabendbierchen_flutter/l10n/app_localizations.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -108,7 +109,7 @@ class _HomePageState extends State<HomePage> {
               // Höchste Promille
               if (_highestPromille != null)
                 _buildStatCard(
-                  title: 'HÖCHSTE PROMILLE',
+                  title: AppLocalizations.of(context).t('highest_promille'),
                   value: '${_highestPromille!['promille'].toStringAsFixed(2)} ‰',
                   subtitle: _highestPromille!['formattedDate'],
                   icon: Icons.trending_up,
@@ -119,9 +120,9 @@ class _HomePageState extends State<HomePage> {
               // Meist getrunkenes Getränk
               if (_mostConsumedBeer != null)
                 _buildStatCard(
-                  title: 'MEIST GETRUNKENES GETRÄNK',
+                  title: AppLocalizations.of(context).t('most_consumed_drink'),
                   value: _mostConsumedBeer!['name'],
-                  subtitle: '${_mostConsumedBeer!['count']}x getrunken',
+                  subtitle: '${_mostConsumedBeer!['count']}${AppLocalizations.of(context).t('times_drunk')}',
                   icon: Icons.local_drink,
                   color: const Color(0xFFFFD700),
                 ),
@@ -130,9 +131,9 @@ class _HomePageState extends State<HomePage> {
               // Diese Woche
               if (_weekConsumption != null && _weekConsumption!['beerCount'] > 0)
                 _buildStatCard(
-                  title: 'DIESE WOCHE',
-                  value: '${_weekConsumption!['beerCount']} Biere',
-                  subtitle: '${_weekConsumption!['alcoholGrams'].toStringAsFixed(1)} g Alkohol',
+                  title: AppLocalizations.of(context).t('this_week'),
+                  value: '${_weekConsumption!['beerCount']} ${AppLocalizations.of(context).t('beers')}',
+                  subtitle: '${_weekConsumption!['alcoholGrams'].toStringAsFixed(1)} ${AppLocalizations.of(context).t('g_alcohol')}',
                   icon: Icons.calendar_today,
                   color: Colors.blueAccent,
                 ),
@@ -141,9 +142,9 @@ class _HomePageState extends State<HomePage> {
               // Durchschnitt
               if (_averagePerDay != null && _averagePerDay!['activeDays'] > 0)
                 _buildStatCard(
-                  title: 'DURCHSCHNITT (30 TAGE)',
-                  value: '${_averagePerDay!['averagePerDay'].toStringAsFixed(1)} Biere/Tag',
-                  subtitle: '${_averagePerDay!['activeDays']} aktive Tage',
+                  title: AppLocalizations.of(context).t('average_30_days'),
+                  value: '${_averagePerDay!['averagePerDay'].toStringAsFixed(1)} ${AppLocalizations.of(context).t('beers_per_day')}',
+                  subtitle: '${_averagePerDay!['activeDays']} ${AppLocalizations.of(context).t('active_days')}',
                   icon: Icons.bar_chart,
                   color: Colors.greenAccent,
                 ),
@@ -151,9 +152,9 @@ class _HomePageState extends State<HomePage> {
               
               // Gesamt
               _buildStatCard(
-                title: 'GESAMT',
-                value: '$_totalBeers Biere',
-                subtitle: 'Gesamt getrunken',
+                title: AppLocalizations.of(context).t('total'),
+                value: '$_totalBeers ${AppLocalizations.of(context).t('beers')}',
+                subtitle: AppLocalizations.of(context).t('total_drunk'),
                 icon: Icons.emoji_events,
                 color: const Color(0xFFFFD700),
               ),
@@ -177,7 +178,7 @@ class _HomePageState extends State<HomePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'WILLKOMMEN',
+          AppLocalizations.of(context).t('welcome'),
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -251,7 +252,7 @@ class _HomePageState extends State<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'HEUTIGER KONSUM',
+                      AppLocalizations.of(context).t('todays_consumption'),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[400],
@@ -260,7 +261,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$beerCount ${beerCount == 1 ? 'Bier' : 'Biere'}',
+                      '$beerCount ${beerCount == 1 ? AppLocalizations.of(context).t('beer_singular') : AppLocalizations.of(context).t('beers')}',
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -277,7 +278,7 @@ class _HomePageState extends State<HomePage> {
             children: [
               Expanded(
                 child: _buildMiniStat(
-                  'Promille',
+                  AppLocalizations.of(context).t('promille'),
                   '${promille.toStringAsFixed(2)} ‰',
                   Icons.speed,
                 ),
@@ -289,7 +290,7 @@ class _HomePageState extends State<HomePage> {
               ),
               Expanded(
                 child: _buildMiniStat(
-                  'Alkohol',
+                  AppLocalizations.of(context).t('alcohol'),
                   '${alcoholGrams.toStringAsFixed(1)} g',
                   Icons.science,
                 ),
@@ -331,7 +332,7 @@ class _HomePageState extends State<HomePage> {
       children: [
         Expanded(
           child: _buildQuickStatCard(
-            'GESAMT',
+            AppLocalizations.of(context).t('total'),
             '$_totalBeers',
             Icons.local_drink,
             Colors.blueAccent,
@@ -340,7 +341,7 @@ class _HomePageState extends State<HomePage> {
         const SizedBox(width: 12),
         Expanded(
           child: _buildQuickStatCard(
-            'DIESE WOCHE',
+            AppLocalizations.of(context).t('this_week'),
             '${_weekConsumption?['beerCount'] ?? 0}',
             Icons.calendar_today,
             Colors.greenAccent,
@@ -489,7 +490,7 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Heute noch kein Konsum',
+            AppLocalizations.of(context).t('no_consumption_today'),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -498,7 +499,7 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Füge dein erstes Bier hinzu!',
+            AppLocalizations.of(context).t('add_first_beer'),
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[500],
@@ -528,7 +529,7 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Noch keine Daten',
+            AppLocalizations.of(context).t('no_data'),
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -537,7 +538,7 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Füge dein erstes Bier hinzu, um Statistiken zu sehen!',
+            AppLocalizations.of(context).t('add_beer_for_stats'),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -565,7 +566,7 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Erstelle ein Profil für personalisierte Statistiken und Promille-Berechnung.',
+              AppLocalizations.of(context).t('create_profile_info'),
               style: TextStyle(
                 color: Colors.grey[400],
                 fontSize: 13,

@@ -384,395 +384,400 @@ class _UserProfileSetupPageState extends State<UserProfileSetupPage>
           ),
           centerTitle: false,
         ),
-        body: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(24.0, 16.0, 24.0, bottomPadding),
-          child: Theme(
-            data: ThemeData.dark().copyWith(
-              primaryColor: const Color(0xFFFFD700),
-              colorScheme: ColorScheme.dark(primary: const Color(0xFFFFD700)),
-            ),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 20),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(24.0, 16.0, 24.0, bottomPadding),
+              child: Theme(
+                data: ThemeData.dark().copyWith(
+                  primaryColor: const Color(0xFFFFD700),
+                  colorScheme: ColorScheme.dark(primary: const Color(0xFFFFD700)),
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 20),
 
-                  // Info Box - Alle Felder erforderlich
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.orange.withOpacity(0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.warning_amber_rounded,
-                          color: Colors.orange,
-                          size: 24,
+                      // Info Box - Alle Felder erforderlich
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.orange.withOpacity(0.3)),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Alle Felder müssen ausgefüllt werden für vollständiges Tracking.',
-                            style: TextStyle(
-                              color: Colors.orange[200],
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Willkommenstext
-                  const Text(
-                    'WILLKOMMEN! 🍺',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(color: Color(0xFFFFD700), blurRadius: 5),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Initialisiere Benutzerparameter...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: const Color(0xFFD4AF37),
-                    ),
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  // Profilbild
-                  Center(
-                    child: Stack(
-                      children: [
-                        GestureDetector(
-                          onTap: _showImageSourceDialog,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: const Color(0xFFFFD700),
-                                width: 2,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(
-                                    0xFFFFD700,
-                                  ).withOpacity(0.2),
-                                  blurRadius: 15,
-                                ),
-                              ],
-                            ),
-                            child: CircleAvatar(
-                              radius: 70,
-                              backgroundColor: const Color(0xFF1F1B16),
-                              backgroundImage: _imageFile != null
-                                  ? FileImage(_imageFile!)
-                                  : _imageUrl != null
-                                  ? NetworkImage(_imageUrl!)
-                                  : null,
-                              child: _imageFile == null && _imageUrl == null
-                                  ? Icon(
-                                      Icons.local_drink,
-                                      size: 70,
-                                      color: const Color(0xFFFFD700),
-                                    )
-                                  : null,
-                            ),
-                          ),
-                        ),
-                        if (_isUploadingImage)
-                          Positioned.fill(
-                            child: CircleAvatar(
-                              radius: 70,
-                              backgroundColor: Colors.black54,
-                              child: CircularProgressIndicator(
-                                color: const Color(0xFFFFD700),
-                              ),
-                            ),
-                          ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFD700),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.black, width: 2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFFFFD700),
-                                  blurRadius: 5,
-                                ),
-                              ],
-                            ),
-                            child: IconButton(
-                              icon: Icon(
-                                Icons.camera_alt,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                              onPressed: _showImageSourceDialog,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(height: 12),
-                  Text(
-                    'Tippe auf das Bild zum Ändern',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                  ),
-
-                  SizedBox(height: 40),
-
-                  // Name - ERFORDERLICH
-                  TextFormField(
-                    controller: _nameController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      labelText: 'Benutzername *',
-                      labelStyle: const TextStyle(color: Color(0xFFD4AF37)),
-                      hintText: 'Wie möchtest du genannt werden?',
-                      hintStyle: TextStyle(color: Colors.grey[500]),
-                      prefixIcon: const Icon(
-                        Icons.person,
-                        color: Color(0xFFFFD700),
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFF12100E),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF8D6E63)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: const Color(0xFF8D6E63).withOpacity(0.5),
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFFFD700),
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Bitte gib einen Namen ein (ERFORDERLICH)';
-                      }
-                      if (value.trim().length < 2) {
-                        return 'Name muss mindestens 2 Zeichen haben';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  SizedBox(height: 20),
-
-                  // Gewicht - ERFORDERLICH
-                  TextFormField(
-                    controller: _weightController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      labelText: 'Gewicht (kg) *',
-                      labelStyle: const TextStyle(color: Color(0xFFD4AF37)),
-                      hintText: 'Für genaue Promille-Berechnung (ERFORDERLICH)',
-                      hintStyle: TextStyle(color: Colors.grey[500]),
-                      prefixIcon: const Icon(
-                        Icons.monitor_weight,
-                        color: Color(0xFFFFD700),
-                      ),
-                      suffixText: 'kg',
-                      suffixStyle: const TextStyle(color: Color(0xFFFFD700)),
-                      filled: true,
-                      fillColor: const Color(0xFF12100E),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF8D6E63)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: const Color(0xFF8D6E63).withOpacity(0.5),
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFFFD700),
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Gewicht ist ERFORDERLICH für vollständiges Tracking';
-                      }
-                      double? weight = double.tryParse(value.trim());
-                      if (weight == null || weight < 30 || weight > 300) {
-                        return 'Bitte gib ein realistisches Gewicht ein (30-300 kg)';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  SizedBox(height: 20),
-
-                  // Größe - ERFORDERLICH
-                  TextFormField(
-                    controller: _heightController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      labelText: 'Größe (cm) *',
-                      labelStyle: const TextStyle(color: Color(0xFFD4AF37)),
-                      hintText: 'Für genaue Promille-Berechnung (ERFORDERLICH)',
-                      hintStyle: TextStyle(color: Colors.grey[500]),
-                      prefixIcon: const Icon(
-                        Icons.height,
-                        color: Color(0xFFFFD700),
-                      ),
-                      suffixText: 'cm',
-                      suffixStyle: const TextStyle(color: Color(0xFFFFD700)),
-                      filled: true,
-                      fillColor: const Color(0xFF12100E),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF8D6E63)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: const Color(0xFF8D6E63).withOpacity(0.5),
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFFFD700),
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Größe ist ERFORDERLICH für vollständiges Tracking';
-                      }
-                      double? height = double.tryParse(value.trim());
-                      if (height == null || height < 100 || height > 250) {
-                        return 'Bitte gib eine realistische Größe ein (100-250 cm)';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  SizedBox(height: 20),
-
-                  // Geschlecht
-                  Container(
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF12100E),
-                      border: Border.all(
-                        color: const Color(0xFF8D6E63).withOpacity(0.5),
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Geschlecht',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFFD4AF37),
-                          ),
-                        ),
-                        SizedBox(height: 12),
-                        Row(
+                        child: Row(
                           children: [
-                            Expanded(
-                              child: _buildGenderOption(
-                                'Männlich',
-                                'male',
-                                Icons.male,
-                              ),
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              color: Colors.orange,
+                              size: 24,
                             ),
-                            SizedBox(width: 12),
+                            const SizedBox(width: 12),
                             Expanded(
-                              child: _buildGenderOption(
-                                'Weiblich',
-                                'female',
-                                Icons.female,
+                              child: Text(
+                                'Alle Felder müssen ausgefüllt werden für vollständiges Tracking.',
+                                style: TextStyle(
+                                  color: Colors.orange[200],
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
 
-                  const SizedBox(height: 12),
-                  Text(
-                    'ERFORDERLICH für vollständiges Tracking und Promille-Berechnung',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.orange[300],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                      const SizedBox(height: 32),
 
-                  SizedBox(height: 40),
-
-                  // Speichern Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _isLoading || _isUploadingImage
-                          ? null
-                          : _saveProfile,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFFD700),
-                        foregroundColor: Colors.black,
-                        elevation: 8,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      // Willkommenstext
+                      const Text(
+                        'WILLKOMMEN! 🍺',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(color: Color(0xFFFFD700), blurRadius: 5),
+                          ],
                         ),
                       ),
-                      child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.black)
-                          : const Text(
-                              'SPEICHERN',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.5,
+                      const SizedBox(height: 8),
+                      Text(
+                        'Initialisiere Benutzerparameter...',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: const Color(0xFFD4AF37),
+                        ),
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      // Profilbild
+                      Center(
+                        child: Stack(
+                          children: [
+                            GestureDetector(
+                              onTap: _showImageSourceDialog,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: const Color(0xFFFFD700),
+                                    width: 2,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(
+                                        0xFFFFD700,
+                                      ).withOpacity(0.2),
+                                      blurRadius: 15,
+                                    ),
+                                  ],
+                                ),
+                                child: CircleAvatar(
+                                  radius: 70,
+                                  backgroundColor: const Color(0xFF1F1B16),
+                                  backgroundImage: _imageFile != null
+                                      ? FileImage(_imageFile!)
+                                      : _imageUrl != null
+                                      ? NetworkImage(_imageUrl!)
+                                      : null,
+                                  child: _imageFile == null && _imageUrl == null
+                                      ? Icon(
+                                          Icons.local_drink,
+                                          size: 70,
+                                          color: const Color(0xFFFFD700),
+                                        )
+                                      : null,
+                                ),
                               ),
                             ),
-                    ),
-                  ),
+                            if (_isUploadingImage)
+                              Positioned.fill(
+                                child: CircleAvatar(
+                                  radius: 70,
+                                  backgroundColor: Colors.black54,
+                                  child: CircularProgressIndicator(
+                                    color: const Color(0xFFFFD700),
+                                  ),
+                                ),
+                              ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFD700),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.black, width: 2),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFFFD700),
+                                      blurRadius: 5,
+                                    ),
+                                  ],
+                                ),
+                                child: IconButton(
+                                  icon: Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  onPressed: _showImageSourceDialog,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
 
-                  const SizedBox(height: 20),
-                ],
+                      SizedBox(height: 12),
+                      Text(
+                        'Tippe auf das Bild zum Ändern',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      ),
+
+                      SizedBox(height: 40),
+
+                      // Name - ERFORDERLICH
+                      TextFormField(
+                        controller: _nameController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Benutzername *',
+                          labelStyle: const TextStyle(color: Color(0xFFD4AF37)),
+                          hintText: 'Wie möchtest du genannt werden?',
+                          hintStyle: TextStyle(color: Colors.grey[500]),
+                          prefixIcon: const Icon(
+                            Icons.person,
+                            color: Color(0xFFFFD700),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFF12100E),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFF8D6E63)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: const Color(0xFF8D6E63).withOpacity(0.5),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFFFD700),
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Bitte gib einen Namen ein (ERFORDERLICH)';
+                          }
+                          if (value.trim().length < 2) {
+                            return 'Name muss mindestens 2 Zeichen haben';
+                          }
+                          return null;
+                        },
+                      ),
+
+                      SizedBox(height: 20),
+
+                      // Gewicht - ERFORDERLICH
+                      TextFormField(
+                        controller: _weightController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Gewicht (kg) *',
+                          labelStyle: const TextStyle(color: Color(0xFFD4AF37)),
+                          hintText: 'Für genaue Promille-Berechnung (ERFORDERLICH)',
+                          hintStyle: TextStyle(color: Colors.grey[500]),
+                          prefixIcon: const Icon(
+                            Icons.monitor_weight,
+                            color: Color(0xFFFFD700),
+                          ),
+                          suffixText: 'kg',
+                          suffixStyle: const TextStyle(color: Color(0xFFFFD700)),
+                          filled: true,
+                          fillColor: const Color(0xFF12100E),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFF8D6E63)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: const Color(0xFF8D6E63).withOpacity(0.5),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFFFD700),
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Gewicht ist ERFORDERLICH für vollständiges Tracking';
+                          }
+                          double? weight = double.tryParse(value.trim());
+                          if (weight == null || weight < 30 || weight > 300) {
+                            return 'Bitte gib ein realistisches Gewicht ein (30-300 kg)';
+                          }
+                          return null;
+                        },
+                      ),
+
+                      SizedBox(height: 20),
+
+                      // Größe - ERFORDERLICH
+                      TextFormField(
+                        controller: _heightController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Größe (cm) *',
+                          labelStyle: const TextStyle(color: Color(0xFFD4AF37)),
+                          hintText: 'Für genaue Promille-Berechnung (ERFORDERLICH)',
+                          hintStyle: TextStyle(color: Colors.grey[500]),
+                          prefixIcon: const Icon(
+                            Icons.height,
+                            color: Color(0xFFFFD700),
+                          ),
+                          suffixText: 'cm',
+                          suffixStyle: const TextStyle(color: Color(0xFFFFD700)),
+                          filled: true,
+                          fillColor: const Color(0xFF12100E),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFF8D6E63)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: const Color(0xFF8D6E63).withOpacity(0.5),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFFFD700),
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Größe ist ERFORDERLICH für vollständiges Tracking';
+                          }
+                          double? height = double.tryParse(value.trim());
+                          if (height == null || height < 100 || height > 250) {
+                            return 'Bitte gib eine realistische Größe ein (100-250 cm)';
+                          }
+                          return null;
+                        },
+                      ),
+
+                      SizedBox(height: 20),
+
+                      // Geschlecht
+                      Container(
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF12100E),
+                          border: Border.all(
+                            color: const Color(0xFF8D6E63).withOpacity(0.5),
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Geschlecht',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFFD4AF37),
+                              ),
+                            ),
+                            SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildGenderOption(
+                                    'Männlich',
+                                    'male',
+                                    Icons.male,
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildGenderOption(
+                                    'Weiblich',
+                                    'female',
+                                    Icons.female,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+                      Text(
+                        'ERFORDERLICH für vollständiges Tracking und Promille-Berechnung',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.orange[300],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+
+                      SizedBox(height: 40),
+
+                      // Speichern Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _isLoading || _isUploadingImage
+                              ? null
+                              : _saveProfile,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFD700),
+                            foregroundColor: Colors.black,
+                            elevation: 8,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: _isLoading
+                              ? const CircularProgressIndicator(color: Colors.black)
+                              : const Text(
+                                  'SPEICHERN',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.5,
+                                  ),
+                                ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -784,48 +789,53 @@ class _UserProfileSetupPageState extends State<UserProfileSetupPage>
   Widget _buildGenderOption(String label, String value, IconData icon) {
     bool isSelected = _selectedGender == value;
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedGender = value;
-        });
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFFFFD700).withOpacity(0.1)
-              : const Color(0xFF1F1B16),
-          border: Border.all(
-            color: isSelected ? const Color(0xFFFFD700) : Colors.grey[800]!,
-            width: 1,
+    return Semantics(
+      button: true,
+      label: '$label auswählen',
+      selected: isSelected,
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedGender = value;
+          });
+        },
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? const Color(0xFFFFD700).withOpacity(0.1)
+                : const Color(0xFF1F1B16),
+            border: Border.all(
+              color: isSelected ? const Color(0xFFFFD700) : Colors.grey[800]!,
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFFFFD700).withOpacity(0.1),
+                      blurRadius: 5,
+                    ),
+                  ]
+                : [],
           ),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFFFFD700).withOpacity(0.1),
-                    blurRadius: 5,
-                  ),
-                ]
-              : [],
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 40,
-              color: isSelected ? const Color(0xFFFFD700) : Colors.grey[600],
-            ),
-            SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? const Color(0xFFFFD700) : Colors.grey[500],
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                size: 40,
+                color: isSelected ? const Color(0xFFFFD700) : Colors.grey[600],
               ),
-            ),
-          ],
+              SizedBox(height: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? const Color(0xFFFFD700) : Colors.grey[500],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

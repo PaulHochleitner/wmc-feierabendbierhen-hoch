@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:feierabendbierchen_flutter/models/user_profile.dart';
 import 'package:feierabendbierchen_flutter/services/beer_firestore_service.dart';
+import 'package:feierabendbierchen_flutter/l10n/app_localizations.dart';
 
 class StatistikPage extends StatefulWidget {
   const StatistikPage({super.key});
@@ -187,7 +188,7 @@ class _StatistikPageState extends State<StatistikPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF12100E),
       appBar: AppBar(
-        title: const Text("KONSUM STATISTIK"),
+        title: Text(AppLocalizations.of(context).t('consumption_stats')),
         backgroundColor: Colors.transparent,
         elevation: 0,
         titleTextStyle: TextStyle(
@@ -206,16 +207,16 @@ class _StatistikPageState extends State<StatistikPage> {
             // 1. Streak & Records
             Row(
               children: [
-                Expanded(child: _buildStatCard("STREAK", "$_currentStreak Tage", Icons.local_fire_department, Colors.orange)),
+                Expanded(child: _buildStatCard(AppLocalizations.of(context).t('streak'), "$_currentStreak ${AppLocalizations.of(context).t('days')}", Icons.local_fire_department, Colors.orange)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildStatCard("REKORD", "$_mostBeersOneDay Biere", Icons.emoji_events, const Color(0xFFFFD700))),
+                Expanded(child: _buildStatCard(AppLocalizations.of(context).t('record'), "$_mostBeersOneDay ${AppLocalizations.of(context).t('beers')}", Icons.emoji_events, const Color(0xFFFFD700))),
               ],
             ),
             const SizedBox(height: 24),
 
             // 2. Chart
             Text(
-              "BIERE (LETZTE 7 TAGE)",
+              AppLocalizations.of(context).t('beers_last_7_days'),
               style: TextStyle(color: const Color(0xFFD4AF37), fontWeight: FontWeight.bold, letterSpacing: 1.2),
             ),
             const SizedBox(height: 16),
@@ -273,23 +274,23 @@ class _StatistikPageState extends State<StatistikPage> {
             const SizedBox(height: 32),
 
             // 3. Alcohol Stats
-            _buildSectionHeader("ALKOHOL KONSUM (REIN)"),
-            _buildInfoRow("Ø pro Tag", "${_avgAlcoholPerDay.toStringAsFixed(1)} g"),
-            _buildInfoRow("Ø pro Woche", "${_avgAlcoholPerWeek.toStringAsFixed(1)} g"),
-            _buildInfoRow("Ø pro Monat", "${_avgAlcoholPerMonth.toStringAsFixed(1)} g"),
-            _buildInfoRow("Maximal (1 Tag)", "${_maxAlcoholOneDay.toStringAsFixed(1)} g"),
+            _buildSectionHeader(AppLocalizations.of(context).t('alcohol_consumption_pure')),
+            _buildInfoRow(AppLocalizations.of(context).t('avg_per_day'), "${_avgAlcoholPerDay.toStringAsFixed(1)} g"),
+            _buildInfoRow(AppLocalizations.of(context).t('avg_per_week'), "${_avgAlcoholPerWeek.toStringAsFixed(1)} g"),
+            _buildInfoRow(AppLocalizations.of(context).t('avg_per_month'), "${_avgAlcoholPerMonth.toStringAsFixed(1)} g"),
+            _buildInfoRow(AppLocalizations.of(context).t('max_one_day'), "${_maxAlcoholOneDay.toStringAsFixed(1)} g"),
             
             const SizedBox(height: 32),
 
             // 4. Promille Stats
-            _buildSectionHeader("PROMILLE WERTE (GESCHÄTZT)"),
-            _buildInfoRow("Ø Max. Promille / Tag", "${_avgDailyPeakPromille.toStringAsFixed(2)} ‰"),
-            _buildInfoRow("Höchster Wert (Rekord)", "${_maxPromilleRecord.toStringAsFixed(2)} ‰", highlight: true),
+            _buildSectionHeader(AppLocalizations.of(context).t('promille_values_estimated')),
+            _buildInfoRow(AppLocalizations.of(context).t('avg_max_promille_day'), "${_avgDailyPeakPromille.toStringAsFixed(2)} ‰"),
+            _buildInfoRow(AppLocalizations.of(context).t('highest_value_record'), "${_maxPromilleRecord.toStringAsFixed(2)} ‰", highlight: true),
             
             const SizedBox(height: 20),
             Center(
               child: Text(
-                "Berechnung: 500ml * Vol% * 0.8 / (Gewicht * r)",
+                AppLocalizations.of(context).t('calculation_formula'),
                 style: TextStyle(color: Colors.grey[700], fontSize: 10),
               ),
             ),

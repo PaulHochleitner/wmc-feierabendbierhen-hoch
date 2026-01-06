@@ -9,19 +9,27 @@ import 'package:feierabendbierchen_flutter/pages/consumption/consumption_diary_p
 import 'package:feierabendbierchen_flutter/pages/statistik/statisitk_page.dart';
 import 'package:feierabendbierchen_flutter/pages/profile/profile_page.dart';
 import 'package:feierabendbierchen_flutter/pages/profile/custom_login_page.dart';
+import 'package:feierabendbierchen_flutter/l10n/app_localizations.dart';
+import 'package:feierabendbierchen_flutter/services/locale_service.dart';
 import 'package:feierabendbierchen_flutter/pages/profile/user_profile_setup_page.dart';
+import 'package:feierabendbierchen_flutter/pages/settings/settings_page.dart';
 
 class MyHomePage extends StatefulWidget {
   final bool isLoggedIn;
   final bool isGuestMode;
 
-  const MyHomePage({super.key, required this.isLoggedIn, this.isGuestMode = false});
+  const MyHomePage({
+    super.key,
+    required this.isLoggedIn,
+    this.isGuestMode = false,
+  });
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
 
   // ===== NEU: Profil-Verwaltung =====
@@ -38,19 +46,21 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    
+
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
     )..repeat();
 
     for (int i = 0; i < 20; i++) {
-      _bubbles.add(Bubble(
-        x: _random.nextDouble(),
-        y: _random.nextDouble(),
-        size: 2 + _random.nextDouble() * 4,
-        speed: 0.3 + _random.nextDouble() * 0.7,
-      ));
+      _bubbles.add(
+        Bubble(
+          x: _random.nextDouble(),
+          y: _random.nextDouble(),
+          size: 2 + _random.nextDouble() * 4,
+          speed: 0.3 + _random.nextDouble() * 0.7,
+        ),
+      );
     }
 
     // ===== NEU: Profil beim Start laden =====
@@ -124,9 +134,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(
-                color: const Color(0xFFFFD700),
-              ),
+              CircularProgressIndicator(color: const Color(0xFFFFD700)),
               SizedBox(height: 16),
               Text(
                 'SYSTEM BOOT... 🍺',
@@ -150,28 +158,31 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     // ===== Pages dynamisch basierend auf Login-Status =====
     final List<Widget> pages;
     if (widget.isLoggedIn) {
-      // Eingeloggt: Home, Bier, Profile
+      // Eingeloggt: Home, Bier, Profile, Einstellungen
       pages = [
         const HomePage(),
         const ConsumptionDiaryPage(), // Konsum-Tagebuch
         const StatistikPage(),
         const ProfilePage(),
+        const SettingsPage(),
       ];
     } else if (widget.isGuestMode) {
-      // Gast-Modus: Home, Bier (eingeschränkt), Stats (eingeschränkt), Profile
+      // Gast-Modus: Home, Bier (eingeschränkt), Stats (eingeschränkt), Profile, Einstellungen
       pages = [
         const HomePage(),
         _buildGuestBeerPlaceholder(),
         _buildGuestStatsPlaceholder(),
         const ProfilePage(),
+        const SettingsPage(),
       ];
     } else {
-      // Nicht eingeloggt: Home, Bier (Login-Platzhalter), Profile
+      // Nicht eingeloggt: Home, Bier (Login-Platzhalter), Profile, Einstellungen
       pages = [
         const HomePage(),
         _buildBeerLoginPlaceholder(),
         const SizedBox(), // Placeholder for Stats
         const ProfilePage(),
+        const SettingsPage(),
       ];
     }
 
@@ -192,7 +203,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         setState(() => _selectedIndex = index);
         return;
       }
-      
+
       setState(() {
         _selectedIndex = index;
       });
@@ -202,10 +213,14 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     return Scaffold(
       extendBody: false,
       appBar: AppBar(
-        title: const Text("FEIERABEND BIERCHEN", style: TextStyle(color: Colors.black)),
+        title: const Text(
+          "FEIERABEND BIERCHEN",
+          style: TextStyle(color: Colors.black),
+        ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [],
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -248,15 +263,23 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
             ],
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
-          child: pages[_selectedIndex],
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+              child: pages[_selectedIndex],
+            ),
+          ),
         ),
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: const Color(0xFF12100E), // volle Deckkraft
-          border: Border(top: BorderSide(color: const Color(0xFF8D6E63).withOpacity(0.3))),
+          border: Border(
+            top: BorderSide(color: const Color(0xFF8D6E63).withOpacity(0.3)),
+          ),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF000000).withOpacity(0.5),
@@ -275,19 +298,26 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
           unselectedItemColor: Colors.grey[600],
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
           items: [
-            const BottomNavigationBarItem(icon: Icon(Icons.home), label: "HOME"),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.home),
+              label: AppLocalizations.of(context).t('home'),
+            ),
             // Bierseite immer anzeigen
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.local_drink),
-              label: "BIER",
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.local_drink),
+              label: AppLocalizations.of(context).t('beer'),
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.bar_chart),
-              label: "STATS",
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.bar_chart),
+              label: AppLocalizations.of(context).t('stats'),
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.account_circle),
-              label: "ACCOUNT",
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.account_circle),
+              label: AppLocalizations.of(context).t('account'),
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.settings),
+              label: AppLocalizations.of(context).t('settings'),
             ),
           ],
         ),
@@ -295,21 +325,16 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     );
   }
 
-
   // Platzhalter wenn nicht eingeloggt
   Widget _buildBeerLoginPlaceholder() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.local_drink,
-            size: 64,
-            color: const Color(0xFFFFD700),
-          ),
+          Icon(Icons.local_drink, size: 64, color: const Color(0xFFFFD700)),
           const SizedBox(height: 16),
           Text(
-            'ZUGRIFF VERWEIGERT 🍺',
+            AppLocalizations.of(context).t('access_denied'),
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -319,7 +344,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
           ),
           const SizedBox(height: 8),
           Text(
-            'Authentifizierung erforderlich für Bier-Tracking.',
+            AppLocalizations.of(context).t('auth_required'),
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey[400]),
           ),
@@ -328,11 +353,13 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const CustomLoginPage()),
+                MaterialPageRoute(
+                  builder: (context) => const CustomLoginPage(),
+                ),
               );
             },
             icon: const Icon(Icons.login),
-            label: const Text('LOGIN PROTOKOLL'),
+            label: Text(AppLocalizations.of(context).t('login_button')),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFFD700).withOpacity(0.1),
               foregroundColor: const Color(0xFFFFD700),
@@ -350,14 +377,10 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.local_drink,
-            size: 64,
-            color: const Color(0xFFFFD700),
-          ),
+          Icon(Icons.local_drink, size: 64, color: const Color(0xFFFFD700)),
           const SizedBox(height: 16),
           Text(
-            'GAST-MODUS 🍺',
+            AppLocalizations.of(context).t('guest_mode'),
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -367,7 +390,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
           ),
           const SizedBox(height: 8),
           Text(
-            'Im Gast-Modus werden deine Daten nicht gespeichert.\nErstelle einen Account für vollständige Funktionen.',
+            AppLocalizations.of(context).t('guest_mode_description'),
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey[400]),
           ),
@@ -376,11 +399,13 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const CustomLoginPage()),
+                MaterialPageRoute(
+                  builder: (context) => const CustomLoginPage(),
+                ),
               );
             },
             icon: const Icon(Icons.person_add),
-            label: const Text('ACCOUNT ERSTELLEN'),
+            label: Text(AppLocalizations.of(context).t('register_button')),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFFD700).withOpacity(0.1),
               foregroundColor: const Color(0xFFFFD700),
@@ -398,14 +423,10 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.bar_chart,
-            size: 64,
-            color: const Color(0xFFFFD700),
-          ),
+          Icon(Icons.bar_chart, size: 64, color: const Color(0xFFFFD700)),
           const SizedBox(height: 16),
           Text(
-            'GAST-MODUS 📊',
+            AppLocalizations.of(context).t('guest_mode'),
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -424,11 +445,13 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const CustomLoginPage()),
+                MaterialPageRoute(
+                  builder: (context) => const CustomLoginPage(),
+                ),
               );
             },
             icon: const Icon(Icons.person_add),
-            label: const Text('ACCOUNT ERSTELLEN'),
+            label: Text(AppLocalizations.of(context).t('register_button')),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFFD700).withOpacity(0.1),
               foregroundColor: const Color(0xFFFFD700),
@@ -448,7 +471,12 @@ class Bubble {
   final double size;
   final double speed;
 
-  Bubble({required this.x, required this.y, required this.size, required this.speed});
+  Bubble({
+    required this.x,
+    required this.y,
+    required this.size,
+    required this.speed,
+  });
 }
 
 // BubblePainter für CustomPainter

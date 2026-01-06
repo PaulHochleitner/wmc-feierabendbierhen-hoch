@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:feierabendbierchen_flutter/services/auth_service.dart';
 import 'package:feierabendbierchen_flutter/pages/profile/custom_login_page.dart';
+import 'package:feierabendbierchen_flutter/l10n/app_localizations.dart';
 
 class OnboardingPage extends StatelessWidget {
   const OnboardingPage({super.key});
@@ -43,7 +44,7 @@ class OnboardingPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 40),
-                
+
                 // Titel
                 const Text(
                   'FEIERABEND BIERCHEN',
@@ -55,7 +56,7 @@ class OnboardingPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Untertitel
                 Text(
                   'Willkommen beim Bier-Tracking System',
@@ -67,7 +68,7 @@ class OnboardingPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 60),
-                
+
                 // Account erstellen Button
                 SizedBox(
                   width: double.infinity,
@@ -76,7 +77,7 @@ class OnboardingPage extends StatelessWidget {
                       // Markiere ersten Start als erledigt
                       await AuthService.setFirstLaunchComplete();
                       await AuthService.setGuestMode(false);
-                      
+
                       // Navigiere zur Login/Registrierungs-Seite
                       if (context.mounted) {
                         Navigator.pushReplacement(
@@ -96,9 +97,9 @@ class OnboardingPage extends StatelessWidget {
                       ),
                       elevation: 8,
                     ),
-                    child: const Text(
-                      'ACCOUNT ERSTELLEN',
-                      style: TextStyle(
+                    child: Text(
+                      AppLocalizations.of(context).t('register_button'),
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.5,
@@ -107,7 +108,7 @@ class OnboardingPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-                
+
                 // Oder Text
                 Row(
                   children: [
@@ -127,7 +128,7 @@ class OnboardingPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
-                
+
                 // Als Gast fortfahren Button
                 SizedBox(
                   width: double.infinity,
@@ -136,7 +137,7 @@ class OnboardingPage extends StatelessWidget {
                       // Setze Gast-Modus und markiere ersten Start als erledigt
                       await AuthService.setFirstLaunchComplete();
                       await AuthService.setGuestMode(true);
-                      
+
                       // Navigiere zur Haupt-App
                       if (context.mounted) {
                         Navigator.pushReplacementNamed(context, '/home');
@@ -164,17 +165,14 @@ class OnboardingPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 40),
-                
+
                 // Info Text
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
                     'Als Gast kannst du die App nutzen, aber deine Daten werden nicht gespeichert.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                   ),
                 ),
               ],
@@ -185,4 +183,3 @@ class OnboardingPage extends StatelessWidget {
     );
   }
 }
-

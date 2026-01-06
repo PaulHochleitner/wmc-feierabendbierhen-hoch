@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform, kIsWeb;
 import 'package:feierabendbierchen_flutter/services/auth_service.dart';
+import 'package:feierabendbierchen_flutter/l10n/app_localizations.dart';
 import 'package:feierabendbierchen_flutter/services/beer_firestore_service.dart';
 import 'package:feierabendbierchen_flutter/pages/profile/user_profile_setup_page.dart';
 import 'package:feierabendbierchen_flutter/firebase_options.dart';
 
 class CustomLoginPage extends StatefulWidget {
   final bool isRegisterMode;
-  
+
   const CustomLoginPage({super.key, this.isRegisterMode = false});
 
   @override
@@ -53,38 +55,40 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
     try {
       if (_isRegisterMode) {
         // Registrierung
-        final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        );
-        
+        final credential = await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(
+              email: _emailController.text.trim(),
+              password: _passwordController.text,
+            );
+
         // Name im User-Profil speichern (falls vorhanden)
         if (_nameController.text.trim().isNotEmpty && credential.user != null) {
           await credential.user!.updateDisplayName(_nameController.text.trim());
         }
-        
+
         await AuthService.saveUserEmail(credential.user?.email);
         await AuthService.setGuestMode(false);
-        
+
         // Zur Homepage navigieren - Profil-Setup wird automatisch als Modal angezeigt
         if (mounted) {
           Navigator.of(context).pushReplacementNamed('/home');
         }
       } else {
         // Login
-        final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        );
-        
+        final credential = await FirebaseAuth.instance
+            .signInWithEmailAndPassword(
+              email: _emailController.text.trim(),
+              password: _passwordController.text,
+            );
+
         await AuthService.saveUserEmail(credential.user?.email);
         await AuthService.setGuestMode(false);
-        
+
         // Prüfe ob Profil existiert
         try {
           final firestoreService = BeerFirestoreService();
           final existingProfile = await firestoreService.getUserProfile();
-          
+
           if (mounted) {
             // Zur Homepage navigieren - Profil-Setup wird automatisch als Modal angezeigt
             Navigator.of(context).pushReplacementNamed('/home');
@@ -100,19 +104,19 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
       String errorMsg;
       switch (e.code) {
         case 'weak-password':
-          errorMsg = 'Das Passwort ist zu schwach.';
+          errorMsg = AppLocalizations.of(context).t('weak_password');
           break;
         case 'email-already-in-use':
-          errorMsg = 'Diese Email ist bereits registriert.';
+          errorMsg = AppLocalizations.of(context).t('email_already_in_use');
           break;
         case 'user-not-found':
-          errorMsg = 'Kein Benutzer mit dieser Email gefunden.';
+          errorMsg = AppLocalizations.of(context).t('user_not_found');
           break;
         case 'wrong-password':
-          errorMsg = 'Falsches Passwort.';
+          errorMsg = AppLocalizations.of(context).t('wrong_password');
           break;
         case 'invalid-email':
-          errorMsg = 'Ungültige Email-Adresse.';
+          errorMsg = AppLocalizations.of(context).t('invalid_email');
           break;
         default:
           errorMsg = 'Fehler: ${e.message ?? "Unbekannter Fehler"}';
@@ -147,22 +151,24 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
       String? clientId;
       if (kIsWeb) {
         // Web: Client-ID aus meta tag (wird automatisch gelesen, aber wir setzen sie trotzdem)
-        clientId = '903834040298-pl04rrl645ov1pmk56vuvcn73b3uk28j.apps.googleusercontent.com';
-      } else if (defaultTargetPlatform == TargetPlatform.iOS || 
+        clientId =
+            '903834040298-pl04rrl645ov1pmk56vuvcn73b3uk28j.apps.googleusercontent.com';
+      } else if (defaultTargetPlatform == TargetPlatform.iOS ||
           defaultTargetPlatform == TargetPlatform.macOS) {
         clientId = DefaultFirebaseOptions.ios.iosClientId;
       } else if (defaultTargetPlatform == TargetPlatform.android) {
         // Android Client-ID aus google-services.json
-        clientId = '903834040298-pl04rrl645ov1pmk56vuvcn73b3uk28j.apps.googleusercontent.com';
+        clientId =
+            '903834040298-pl04rrl645ov1pmk56vuvcn73b3uk28j.apps.googleusercontent.com';
       }
-      
+
       // Nur 'email' Scope verwenden, um People API zu vermeiden
       // Firebase Auth hat bereits alle benötigten Informationen
       final GoogleSignIn googleSignIn = GoogleSignIn(
         scopes: ['email'],
         clientId: clientId,
       );
-      
+
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
       if (googleUser == null) {
@@ -173,7 +179,8 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
         return;
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
@@ -182,12 +189,12 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
       await FirebaseAuth.instance.signInWithCredential(credential);
       await AuthService.saveUserEmail(FirebaseAuth.instance.currentUser?.email);
       await AuthService.setGuestMode(false);
-      
+
       // Prüfe ob Profil existiert
       try {
         final firestoreService = BeerFirestoreService();
         final existingProfile = await firestoreService.getUserProfile();
-        
+
         if (mounted) {
           // Zur Homepage navigieren - Profil-Setup wird automatisch als Modal angezeigt
           Navigator.of(context).pushReplacementNamed('/home');
@@ -203,7 +210,8 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
         // Detailliertere Fehlermeldung
         String errorMsg = 'Google Sign-In fehlgeschlagen';
         if (e.toString().contains('People API')) {
-          errorMsg = 'Google Sign-In: People API ist nicht aktiviert. Bitte aktiviere sie in der Google Cloud Console oder verwende Email/Passwort Login.';
+          errorMsg =
+              'Google Sign-In: People API ist nicht aktiviert. Bitte aktiviere sie in der Google Cloud Console oder verwende Email/Passwort Login.';
         } else {
           errorMsg = 'Google Sign-In fehlgeschlagen: ${e.toString()}';
         }
@@ -221,18 +229,18 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF12100E),
-              Color(0xFF251D18),
-            ],
+            colors: [Color(0xFF12100E), Color(0xFF251D18)],
           ),
         ),
         child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SizedBox(
-                height: constraints.maxHeight,
-                child: SingleChildScrollView(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SizedBox(
+                    height: constraints.maxHeight,
+                    child: SingleChildScrollView(
                   padding: EdgeInsets.only(
                     left: 24.0,
                     right: 24.0,
@@ -245,10 +253,14 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: 40),
-                        
+
                         // Titel
                         Text(
-                          _isRegisterMode ? 'ACCOUNT ERSTELLEN' : 'LOGIN',
+                          _isRegisterMode
+                              ? AppLocalizations.of(
+                                  context,
+                                ).t('register_button')
+                              : AppLocalizations.of(context).t('login_button'),
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 32,
@@ -258,88 +270,133 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
                           ),
                         ),
                         const SizedBox(height: 40),
-                        
+
                         // Name Feld (nur bei Registrierung)
-                        if (_isRegisterMode) ...[
+                        if (_isRegisterMode)
                           TextFormField(
                             controller: _nameController,
                             decoration: InputDecoration(
-                              labelText: 'Name',
-                              labelStyle: const TextStyle(color: Color(0xFF8D6E63)),
-                              prefixIcon: const Icon(Icons.person, color: Color(0xFFFFD700)),
+                              labelText: AppLocalizations.of(
+                                context,
+                              ).t('name_label'),
+                              labelStyle: const TextStyle(
+                                color: Color(0xFF8D6E63),
+                              ),
+                              prefixIcon: const Icon(
+                                Icons.person,
+                                color: Color(0xFFFFD700),
+                              ),
                               filled: true,
                               fillColor: Colors.white.withOpacity(0.1),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFF8D6E63)),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFF8D6E63),
+                                ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: const Color(0xFF8D6E63).withOpacity(0.5)),
+                                borderSide: BorderSide(
+                                  color: const Color(
+                                    0xFF8D6E63,
+                                  ).withOpacity(0.5),
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFFFFD700),
+                                  width: 2,
+                                ),
                               ),
                             ),
                             style: const TextStyle(color: Colors.white),
                             validator: (value) {
-                              if (_isRegisterMode && (value == null || value.trim().isEmpty)) {
-                                return 'Bitte gib einen Namen ein';
+                              if (_isRegisterMode &&
+                                  (value == null || value.trim().isEmpty)) {
+                                return AppLocalizations.of(
+                                  context,
+                                ).t('please_enter_name');
                               }
                               return null;
                             },
                           ),
-                          const SizedBox(height: 20),
-                        ],
-                        
+                        if (_isRegisterMode) const SizedBox(height: 20),
+
                         // Email Feld
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
-                            labelText: 'Email',
-                            labelStyle: const TextStyle(color: Color(0xFF8D6E63)),
-                            prefixIcon: const Icon(Icons.email, color: Color(0xFFFFD700)),
+                            labelText: AppLocalizations.of(
+                              context,
+                            ).t('login_email_label'),
+                            labelStyle: const TextStyle(
+                              color: Color(0xFF8D6E63),
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.email,
+                              color: Color(0xFFFFD700),
+                            ),
                             filled: true,
                             fillColor: Colors.white.withOpacity(0.1),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFF8D6E63)),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF8D6E63),
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: const Color(0xFF8D6E63).withOpacity(0.5)),
+                              borderSide: BorderSide(
+                                color: const Color(0xFF8D6E63).withOpacity(0.5),
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
+                              borderSide: const BorderSide(
+                                color: Color(0xFFFFD700),
+                                width: 2,
+                              ),
                             ),
                           ),
                           style: const TextStyle(color: Colors.white),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Bitte gib eine Email ein';
+                              return AppLocalizations.of(
+                                context,
+                              ).t('please_enter_email');
                             }
                             if (!value.contains('@')) {
-                              return 'Ungültige Email-Adresse';
+                              return AppLocalizations.of(
+                                context,
+                              ).t('invalid_email');
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: 20),
-                        
+
                         // Passwort Feld
                         TextFormField(
                           controller: _passwordController,
                           obscureText: !_isPasswordVisible,
                           decoration: InputDecoration(
-                            labelText: 'Passwort',
-                            labelStyle: const TextStyle(color: Color(0xFF8D6E63)),
-                            prefixIcon: const Icon(Icons.lock, color: Color(0xFFFFD700)),
+                            labelText: AppLocalizations.of(
+                              context,
+                            ).t('login_password_label'),
+                            labelStyle: const TextStyle(
+                              color: Color(0xFF8D6E63),
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.lock,
+                              color: Color(0xFFFFD700),
+                            ),
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                                _isPasswordVisible
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
                                 color: const Color(0xFFFFD700),
                               ),
                               onPressed: () {
@@ -352,30 +409,41 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
                             fillColor: Colors.white.withOpacity(0.1),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFF8D6E63)),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF8D6E63),
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: const Color(0xFF8D6E63).withOpacity(0.5)),
+                              borderSide: BorderSide(
+                                color: const Color(0xFF8D6E63).withOpacity(0.5),
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
+                              borderSide: const BorderSide(
+                                color: Color(0xFFFFD700),
+                                width: 2,
+                              ),
                             ),
                           ),
                           style: const TextStyle(color: Colors.white),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Bitte gib ein Passwort ein';
+                              return AppLocalizations.of(
+                                context,
+                              ).t('please_enter_password');
                             }
                             if (_isRegisterMode && value.length < 6) {
-                              return 'Passwort muss mindestens 6 Zeichen lang sein';
+                              return AppLocalizations.of(
+                                context,
+                              ).t('password_min_length');
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: 30),
-                        
+
                         // Fehler-Meldung
                         if (_errorMessage != null)
                           Container(
@@ -392,45 +460,61 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
                               textAlign: TextAlign.center,
                             ),
                           ),
-                        
+
                         // Email/Passwort Button
-                        ElevatedButton(
-                          onPressed: _isLoading ? null : _handleEmailAuth,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFD700),
-                            foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(vertical: 18),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        Semantics(
+                          button: true,
+                          label: _isRegisterMode
+                              ? AppLocalizations.of(
+                                  context,
+                                ).t('register_button')
+                              : AppLocalizations.of(context).t('login_button'),
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _handleEmailAuth,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFFD700),
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 8,
                             ),
-                            elevation: 8,
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.black,
+                                      ),
+                                    ),
+                                  )
+                                : Text(
+                                    _isRegisterMode
+                                        ? AppLocalizations.of(
+                                            context,
+                                          ).t('register_button')
+                                        : AppLocalizations.of(
+                                            context,
+                                          ).t('login_button'),
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.5,
+                                    ),
+                                  ),
                           ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                                  ),
-                                )
-                              : Text(
-                                  _isRegisterMode ? 'REGISTRIEREN' : 'ANMELDEN',
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.5,
-                                  ),
-                                ),
                         ),
-                        const SizedBox(height: 20),
-                        
-                        // Oder Divider
+
                         Row(
                           children: [
                             Expanded(child: Divider(color: Colors.grey[700])),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               child: Text(
                                 'ODER',
                                 style: TextStyle(
@@ -444,7 +528,7 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
                           ],
                         ),
                         const SizedBox(height: 20),
-                        
+
                         // Google Sign-In Button
                         OutlinedButton.icon(
                           onPressed: _isLoading ? null : _handleGoogleSignIn,
@@ -459,7 +543,10 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
                           ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: const Color(0xFFFFD700),
-                            side: const BorderSide(color: Color(0xFFFFD700), width: 2),
+                            side: const BorderSide(
+                              color: Color(0xFFFFD700),
+                              width: 2,
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 18),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -467,7 +554,7 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
                           ),
                         ),
                         const SizedBox(height: 30),
-                        
+
                         // Wechsel zwischen Login/Registrierung
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -495,7 +582,7 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
                             ),
                           ],
                         ),
-                        
+
                         // Zurück Button
                         TextButton(
                           onPressed: () {
@@ -513,12 +600,13 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
                     ),
                   ),
                 ),
-              );
-            },
+                  );
+                },
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 }
-
