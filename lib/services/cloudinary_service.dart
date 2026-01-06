@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:dio/dio.dart'; // ← DIESE ZEILE HINZUFÜGEN!
+// ← DIESE ZEILE HINZUFÜGEN!
 import 'package:path_provider/path_provider.dart';
 
 /// Service to upload images to Cloudinary.

@@ -7,7 +7,8 @@ import 'package:feierabendbierchen_flutter/l10n/app_localizations.dart';
 import 'package:feierabendbierchen_flutter/models/user_profile.dart';
 import 'package:feierabendbierchen_flutter/pages/beer/beer_page.dart';
 import 'package:feierabendbierchen_flutter/services/location_service.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:feierabendbierchen_flutter/pages/map/location_picker_page.dart';
 
 class ConsumptionDiaryPage extends StatefulWidget {
@@ -437,78 +438,105 @@ class _ConsumptionDiaryPageState extends State<ConsumptionDiaryPage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFF8D6E63)),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          color: locationName != null
-                              ? Colors.redAccent
-                              : Colors.grey,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            locationName ?? "Kein Standort markiert",
-                            style: const TextStyle(color: Colors.white),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        // GPS Button
-                        IconButton(
-                          icon: const Icon(
-                            Icons.my_location,
-                            color: Color(0xFFFFD700),
-                          ),
-                          onPressed: () async {
-                            final locService = LocationService();
-                            final pos = await locService.getCurrentLocation();
-                            if (pos != null) {
-                              final address = await locService
-                                  .getAddressFromCoordinates(
-                                    pos.latitude,
-                                    pos.longitude,
-                                  );
-                              setModalState(() {
-                                latitude = pos.latitude;
-                                longitude = pos.longitude;
-                                locationName = address ?? "Mein Standort";
-                              });
-                            }
-                          },
-                        ),
-                        // Suche Button
-                        IconButton(
-                          icon: const Icon(Icons.map, color: Color(0xFFFFD700)),
-                          tooltip: "Karte öffnen",
-                          onPressed: () async {
-                            final result =
-                                await Navigator.push<Map<String, dynamic>>(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => LocationPickerPage(),
-                                  ),
-                                );
 
-                            if (result != null) {
-                              setModalState(() {
-                                latitude = result['lat'];
-                                longitude = result['lng'];
-                                locationName = result['name'];
-                              });
-                            }
-                          },
-                        ),
-                      ],
-                    ),
+                  // Standort Logik mit Live-Update
+                  FutureBuilder<bool>(
+                    future: LocationService().isLocationServiceEnabled(),
+                    builder: (context, snapshot) {
+                      final bool initialStatus = snapshot.data ?? false;
+
+                      return StreamBuilder<bool>(
+                        stream: LocationService().locationStatusStream,
+                        initialData: initialStatus,
+                        builder: (context, streamSnapshot) {
+                          // Buttons immer aktivieren
+                          const Color iconColor = Color(0xFFFFD700);
+
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: const Color(0xFF8D6E63),
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  color: locationName != null
+                                      ? Colors.redAccent
+                                      : Colors.grey,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                  locationName ?? "Kein Standort markiert",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                // GPS Button
+                                IconButton(
+                                icon: const Icon(
+                                    Icons.my_location,
+                                    color: iconColor,
+                                  ),
+                                onPressed: () async {
+                                          final locService = LocationService();
+                                          final pos = await locService
+                                              .getCurrentLocation();
+                                          if (pos != null) {
+                                            final address = await locService
+                                                .getAddressFromCoordinates(
+                                                  pos.latitude,
+                                                  pos.longitude,
+                                                );
+                                            setModalState(() {
+                                              latitude = pos.latitude;
+                                              longitude = pos.longitude;
+                                              locationName =
+                                                  address ?? "Mein Standort";
+                                            });
+                                          }
+                                        },
+                                ),
+                                // Karte Button
+                                IconButton(
+                                icon: const Icon(Icons.map, color: iconColor),
+                                  tooltip: "Karte öffnen",
+                                onPressed: () async {
+                                          final result =
+                                              await Navigator.push<
+                                                Map<String, dynamic>
+                                              >(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      LocationPickerPage(),
+                                                ),
+                                              );
+
+                                          if (result != null) {
+                                            setModalState(() {
+                                              latitude = result['lat'];
+                                              longitude = result['lng'];
+                                              locationName = result['name'];
+                                            });
+                                          }
+                                        },
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
 
@@ -641,183 +669,201 @@ class _ConsumptionDiaryPageState extends State<ConsumptionDiaryPage> {
         padding: const EdgeInsets.all(24),
         child: SingleChildScrollView(
           child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'DETAILS',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFFFD700),
-                          letterSpacing: 1.5,
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'DETAILS',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFFFFD700),
+                            letterSpacing: 1.5,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        DateFormat('dd.MM.yyyy HH:mm', 'de').format(date),
-                        style: TextStyle(fontSize: 14, color: Colors.grey[400]),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          DateFormat('dd.MM.yyyy HH:mm', 'de').format(date),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Details
-            _buildDetailRow('Bier', beer.name, Icons.local_drink),
-            const SizedBox(height: 16),
-            _buildDetailRow('Land', beer.country, Icons.public),
-            const SizedBox(height: 16),
-            _buildDetailRow(
-              'Alkoholgehalt',
-              '${beer.percentage.toStringAsFixed(1)} %',
-              Icons.science,
-            ),
-            const SizedBox(height: 16),
-            _buildDetailRow('Bewertung', '${beer.rating}/5 ⭐', Icons.star),
-            const SizedBox(height: 16),
-            _buildDetailRow(
-              'Promille',
-              '${promille.toStringAsFixed(2)} ‰',
-              Icons.speed,
-              highlight: true,
-            ),
-
-            // Karte anzeigen wenn Koordinaten vorhanden
-            if (beer.latitude != null && beer.longitude != null) ...[
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
               const SizedBox(height: 24),
-              Text(
-                "GETRUNKEN IN: ${beer.locationName ?? ''}",
-                style: const TextStyle(
-                  color: Color(0xFFD4AF37),
-                  fontWeight: FontWeight.bold,
-                ),
+
+              // Details
+              _buildDetailRow('Bier', beer.name, Icons.local_drink),
+              const SizedBox(height: 16),
+              _buildDetailRow('Land', beer.country, Icons.public),
+              const SizedBox(height: 16),
+              _buildDetailRow(
+                'Alkoholgehalt',
+                '${beer.percentage.toStringAsFixed(1)} %',
+                Icons.science,
               ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 200,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: GoogleMap(
-                    initialCameraPosition: CameraPosition(
-                      target: LatLng(beer.latitude!, beer.longitude!),
-                      zoom: 15,
-                    ),
-                    markers: {
-                      Marker(
-                        markerId: const MarkerId('beer_loc'),
-                        position: LatLng(beer.latitude!, beer.longitude!),
+              const SizedBox(height: 16),
+              _buildDetailRow('Bewertung', '${beer.rating}/5 ⭐', Icons.star),
+              const SizedBox(height: 16),
+              _buildDetailRow(
+                'Promille',
+                '${promille.toStringAsFixed(2)} ‰',
+                Icons.speed,
+                highlight: true,
+              ),
+
+              // Karte anzeigen wenn Koordinaten vorhanden
+              if (beer.latitude != null && beer.longitude != null) ...[
+                const SizedBox(height: 24),
+                Text(
+                  "GETRUNKEN IN: ${beer.locationName ?? ''}",
+                  style: const TextStyle(
+                    color: Color(0xFFD4AF37),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 200,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: FlutterMap(
+                      options: MapOptions(
+                        initialCenter: LatLng(beer.latitude!, beer.longitude!),
+                        initialZoom: 15.0,
                       ),
-                    },
-                  ),
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 32),
-
-            // Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _showBeerDialog(existingBeer: beer);
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFFFD700),
-                      side: const BorderSide(color: Color(0xFFFFD700)),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text('BEARBEITEN'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          backgroundColor: const Color(0xFF1C1917),
-                          title: const Text(
-                            'Löschen?',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          content: const Text(
-                            'Möchtest du diesen Eintrag wirklich löschen?',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text(
-                                'Abbrechen',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              child: const Text(
-                                'Löschen',
-                                style: TextStyle(color: Colors.redAccent),
+                      children: [
+                        TileLayer(
+                          urlTemplate:
+                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          userAgentPackageName: 'com.feierabendbierchen.app',
+                        ),
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              point: LatLng(beer.latitude!, beer.longitude!),
+                              width: 40,
+                              height: 40,
+                              child: const Icon(
+                                Icons.location_on,
+                                color: Colors.red,
+                                size: 40,
                               ),
                             ),
                           ],
                         ),
-                      );
-
-                      if (confirm == true && beer.id != null) {
-                        final user = FirebaseAuth.instance.currentUser;
-                        if (user != null) {
-                          await FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(user.uid)
-                              .collection('beers')
-                              .doc(beer.id)
-                              .delete();
-
-                          if (mounted) {
-                            Navigator.pop(context); // Close details only
-                            _loadData();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Eintrag gelöscht'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
-                        }
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      ],
                     ),
-                    child: const Text('LÖSCHEN'),
                   ),
                 ),
               ],
-            ),
 
-            SizedBox(height: MediaQuery.of(context).padding.bottom),
-          ],
-        ),
+              const SizedBox(height: 32),
+
+              // Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showBeerDialog(existingBeer: beer);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFFFD700),
+                        side: const BorderSide(color: Color(0xFFFFD700)),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: const Text('BEARBEITEN'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            backgroundColor: const Color(0xFF1C1917),
+                            title: const Text(
+                              'Löschen?',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            content: const Text(
+                              'Möchtest du diesen Eintrag wirklich löschen?',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text(
+                                  'Abbrechen',
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text(
+                                  'Löschen',
+                                  style: TextStyle(color: Colors.redAccent),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirm == true && beer.id != null) {
+                          final user = FirebaseAuth.instance.currentUser;
+                          if (user != null) {
+                            await FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(user.uid)
+                                .collection('beers')
+                                .doc(beer.id)
+                                .delete();
+
+                            if (mounted) {
+                              Navigator.pop(context); // Close details only
+                              _loadData();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Eintrag gelöscht'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: const Text('LÖSCHEN'),
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: MediaQuery.of(context).padding.bottom),
+            ],
+          ),
         ),
       ),
     );

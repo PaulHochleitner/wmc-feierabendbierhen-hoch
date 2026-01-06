@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:feierabendbierchen_flutter/services/beer_stats_service.dart';
 import 'package:feierabendbierchen_flutter/services/beer_firestore_service.dart';
 import 'package:feierabendbierchen_flutter/models/user_profile.dart';

@@ -90,18 +90,27 @@ class SettingsPage extends StatelessWidget {
               ),
 
               const SizedBox(height: 24),
-              
+
               // Standort Einstellungen
               Text(
                 "BERECHTIGUNGEN",
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 8),
               ListTile(
-                title: const Text("Standort-Zugriff verwalten"),
-                subtitle: const Text("In den Systemeinstellungen ändern"),
+                title: const Text("App-Berechtigungen"),
+                subtitle: const Text("Zugriff erlauben/verbieten"),
                 trailing: const Icon(Icons.open_in_new),
                 onTap: () => LocationService().openSettings(),
+              ),
+              ListTile(
+                title: const Text("GPS aktivieren"),
+                subtitle: const Text("System-Standortdienste öffnen"),
+                trailing: const Icon(Icons.location_on),
+                onTap: () => LocationService().openLocationSettings(),
               ),
               const SizedBox(height: 24),
 

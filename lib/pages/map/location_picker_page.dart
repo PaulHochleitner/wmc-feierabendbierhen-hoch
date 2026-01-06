@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:feierabendbierchen_flutter/services/location_service.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 class LocationPickerPage extends StatefulWidget {
   const LocationPickerPage({super.key});
@@ -10,17 +12,9 @@ class LocationPickerPage extends StatefulWidget {
 }
 
 class _LocationPickerPageState extends State<LocationPickerPage> {
-  final LocationService _locationService = LocationService();
-  LatLng? _pickedLocation;
+  final MapController _mapController = MapController();
+  LatLng? _selectedLocation;
   bool _isLoading = true;
-
-  // Standard: Wien (Fallback, falls GPS aus ist)
-  static const CameraPosition _defaultPosition = CameraPosition(
-    target: LatLng(48.2082, 16.3738),
-    zoom: 12,
-  );
-
-  CameraPosition _initialPosition = _defaultPosition;
 
   @override
   void initState() {
@@ -30,55 +24,78 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
 
   Future<void> _getCurrentLocation() async {
     try {
-      final pos = await _locationService.getCurrentLocation();
-      if (pos != null) {
-        setState(() {
-          _initialPosition = CameraPosition(
-            target: LatLng(pos.latitude, pos.longitude),
-            zoom: 15,
-          );
-        });
+      // Prüfe Berechtigungen
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
       }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        // Fallback wenn abgelehnt
+        _setDefaultLocation();
+        return;
+      }
+
+      Position position = await Geolocator.getCurrentPosition();
+      _updateLocation(LatLng(position.latitude, position.longitude));
     } catch (e) {
-      debugPrint('Fehler beim Laden des Standorts: $e');
-    } finally {
-      setState(() => _isLoading = false);
+      debugPrint("Fehler beim Laden des Standorts: $e");
+      _setDefaultLocation();
     }
   }
 
-  void _onTap(LatLng position) {
-    setState(() {
-      _pickedLocation = position;
-    });
+  void _setDefaultLocation() {
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        // Default: Berlin (oder ein anderer Standardwert)
+        _selectedLocation = LatLng(52.5200, 13.4050);
+      });
+    }
   }
 
-  Future<void> _confirmLocation() async {
-    if (_pickedLocation == null) return;
+  void _updateLocation(LatLng position) {
+    if (mounted) {
+      setState(() {
+        _selectedLocation = position;
+        _isLoading = false;
+      });
+      _mapController.move(position, 15.0);
+    }
+  }
 
-    setState(() => _isLoading = true);
+  Future<void> _confirmSelection() async {
+    if (_selectedLocation == null) return;
 
+    String locationName = "Ausgewählter Ort";
     try {
-      // Adresse aus Koordinaten ermitteln (Reverse Geocoding)
-      final address = await _locationService.getAddressFromCoordinates(
-        _pickedLocation!.latitude,
-        _pickedLocation!.longitude,
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        _selectedLocation!.latitude,
+        _selectedLocation!.longitude,
       );
-
-      if (mounted) {
-        Navigator.of(context).pop({
-          'lat': _pickedLocation!.latitude,
-          'lng': _pickedLocation!.longitude,
-          'name': address ?? 'Ausgewählter Ort',
-        });
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        locationName =
+            "${place.street ?? ''} ${place.thoroughfare ?? ''}, ${place.locality ?? ''}"
+                .trim();
+        locationName = locationName
+            .replaceAll(RegExp(r'^, |^ '), '')
+            .replaceAll(RegExp(r', $'), '');
+        if (locationName.isEmpty) {
+          locationName = place.locality ?? "Unbekannter Ort";
+        }
       }
     } catch (e) {
-      if (mounted) {
-        Navigator.of(context).pop({
-          'lat': _pickedLocation!.latitude,
-          'lng': _pickedLocation!.longitude,
-          'name': 'Unbekannter Ort',
-        });
-      }
+      debugPrint("Geocoding Fehler: $e");
+    }
+
+    if (mounted) {
+      Navigator.pop(context, {
+        'lat': _selectedLocation!.latitude,
+        'lng': _selectedLocation!.longitude,
+        'name': locationName,
+      });
     }
   }
 
@@ -86,35 +103,52 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Standort auf Karte wählen'),
+        title: const Text("Standort wählen"),
         backgroundColor: const Color(0xFF1F1B16),
         foregroundColor: const Color(0xFFFFD700),
         actions: [
-          if (_pickedLocation != null)
-            IconButton(
-              icon: const Icon(Icons.check),
-              onPressed: _confirmLocation,
-              tooltip: 'Standort übernehmen',
-            ),
+          IconButton(
+            icon: const Icon(Icons.check),
+            // Button ist nur aktiv, wenn ein Standort (auch per GPS) gefunden wurde
+            onPressed: _selectedLocation != null ? _confirmSelection : null,
+          ),
         ],
       ),
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFFFFD700)),
             )
-          : GoogleMap(
-              initialCameraPosition: _initialPosition,
-              onTap: _onTap,
-              markers: _pickedLocation != null
-                  ? {
+          : FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: _selectedLocation ?? LatLng(52.5200, 13.4050),
+                initialZoom: 15.0,
+                onTap: (tapPosition, point) => _updateLocation(point),
+                interactionOptions: InteractionOptions(
+                  flags: InteractiveFlag.all,
+                ),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.feierabendbierchen.app',
+                ),
+                if (_selectedLocation != null)
+                  MarkerLayer(
+                    markers: [
                       Marker(
-                        markerId: const MarkerId('picked'),
-                        position: _pickedLocation!,
+                        point: _selectedLocation!,
+                        width: 40,
+                        height: 40,
+                        child: const Icon(
+                          Icons.location_on,
+                          color: Colors.red,
+                          size: 40,
+                        ),
                       ),
-                    }
-                  : {},
-              myLocationEnabled: true,
-              myLocationButtonEnabled: true,
+                    ],
+                  ),
+              ],
             ),
     );
   }

@@ -46,13 +46,32 @@ class LocationService {
     await Geolocator.openAppSettings();
   }
 
+  /// Öffnet die globalen Standort-Einstellungen (GPS an/aus)
+  Future<bool> openLocationSettings() async {
+    return await Geolocator.openLocationSettings();
+  }
+
+  /// Prüft, ob Standortdienste aktiviert sind
+  Future<bool> isLocationServiceEnabled() async {
+    return await Geolocator.isLocationServiceEnabled();
+  }
+
+  /// Stream für Status-Änderungen (GPS an/aus während App läuft)
+  Stream<bool> get locationStatusStream {
+    return Geolocator.getServiceStatusStream().map(
+      (status) => status == ServiceStatus.enabled,
+    );
+  }
+
   /// Holt Adresse aus Koordinaten (Reverse Geocoding)
   Future<String?> getAddressFromCoordinates(double lat, double lng) async {
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
       if (placemarks.isNotEmpty) {
         final place = placemarks.first;
-        return "${place.street ?? ''} ${place.thoroughfare ?? ''}, ${place.locality ?? ''}".trim().replaceAll(RegExp(r'^, |^ '), '');
+        return "${place.street ?? ''} ${place.thoroughfare ?? ''}, ${place.locality ?? ''}"
+            .trim()
+            .replaceAll(RegExp(r'^, |^ '), '');
       }
     } catch (_) {}
     return null;

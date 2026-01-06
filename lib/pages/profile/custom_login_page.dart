@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart'
 import 'package:feierabendbierchen_flutter/services/auth_service.dart';
 import 'package:feierabendbierchen_flutter/l10n/app_localizations.dart';
 import 'package:feierabendbierchen_flutter/services/beer_firestore_service.dart';
-import 'package:feierabendbierchen_flutter/pages/profile/user_profile_setup_page.dart';
 import 'package:feierabendbierchen_flutter/firebase_options.dart';
 
 class CustomLoginPage extends StatefulWidget {

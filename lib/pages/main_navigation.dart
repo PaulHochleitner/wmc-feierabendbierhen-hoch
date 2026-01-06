@@ -10,7 +10,6 @@ import 'package:feierabendbierchen_flutter/pages/statistik/statisitk_page.dart';
 import 'package:feierabendbierchen_flutter/pages/profile/profile_page.dart';
 import 'package:feierabendbierchen_flutter/pages/profile/custom_login_page.dart';
 import 'package:feierabendbierchen_flutter/l10n/app_localizations.dart';
-import 'package:feierabendbierchen_flutter/services/locale_service.dart';
 import 'package:feierabendbierchen_flutter/pages/profile/user_profile_setup_page.dart';
 import 'package:feierabendbierchen_flutter/pages/settings/settings_page.dart';
 
