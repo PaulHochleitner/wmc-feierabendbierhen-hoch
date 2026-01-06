@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:feierabendbierchen_flutter/services/beer_stats_service.dart';
-import 'package:feierabendbierchen_flutter/services/beer_firestore_service.dart';
-import 'package:feierabendbierchen_flutter/models/user_profile.dart';
+import '../../services/beer_stats_service.dart';
+import '../../services/beer_firestore_service.dart';
+import '../../models/user_profile.dart';
+import '../../models/consumed_beer.dart';
+import '../../l10n/app_localizations.dart';
+import '../../widgets/home/stat_card.dart';
+import '../../widgets/home/quick_stat_card.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/constants/app_constants.dart';
 import 'package:intl/intl.dart';
-import 'package:feierabendbierchen_flutter/l10n/app_localizations.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,7 +22,7 @@ class _HomePageState extends State<HomePage> {
   final BeerFirestoreService _firestoreService = BeerFirestoreService();
   
   bool _isLoading = true;
-  List<DocumentSnapshot> _beers = [];
+  List<ConsumedBeer> _beers = [];
   UserProfile? _userProfile;
   
   // Heutiger Konsum
@@ -39,11 +43,11 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final profile = await _firestoreService.getUserProfile();
       final beers = await _statsService.getAllBeers();
-      
+
       if (mounted) {
         setState(() {
           _userProfile = profile;
@@ -60,10 +64,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _calculateStats() {
-    _todayConsumption = _statsService.getTodayConsumption(_beers, _userProfile);
-    _highestPromille = _statsService.getHighestPromille(_beers, _userProfile);
+    _todayConsumption =
+        _statsService.getTodayConsumption(_beers, _userProfile);
+    _highestPromille =
+        _statsService.getHighestPromille(_beers, _userProfile);
     _mostConsumedBeer = _statsService.getMostConsumedBeer(_beers);
-    _weekConsumption = _statsService.getWeekConsumption(_beers, _userProfile);
+    _weekConsumption =
+        _statsService.getWeekConsumption(_beers, _userProfile);
     _averagePerDay = _statsService.getAveragePerDay(_beers);
     _totalBeers = _statsService.getTotalBeers(_beers);
   }
@@ -75,13 +82,13 @@ class _HomePageState extends State<HomePage> {
     
     if (_isLoading) {
       return Center(
-        child: CircularProgressIndicator(color: const Color(0xFFFFD700)),
+        child: CircularProgressIndicator(color: AppTheme.beerAccentGold),
       );
     }
 
-    return RefreshIndicator(
+      return RefreshIndicator(
       onRefresh: _loadData,
-      color: const Color(0xFFFFD700),
+      color: AppTheme.beerAccentGold,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPadding),
@@ -107,7 +114,7 @@ class _HomePageState extends State<HomePage> {
             if (_totalBeers > 0) ...[
               // Höchste Promille
               if (_highestPromille != null)
-                _buildStatCard(
+                StatCard(
                   title: AppLocalizations.of(context).t('highest_promille'),
                   value: '${_highestPromille!['promille'].toStringAsFixed(2)} ‰',
                   subtitle: _highestPromille!['formattedDate'],
@@ -115,47 +122,57 @@ class _HomePageState extends State<HomePage> {
                   color: Colors.redAccent,
                 ),
               if (_highestPromille != null) const SizedBox(height: 16),
-              
+
               // Meist getrunkenes Getränk
               if (_mostConsumedBeer != null)
-                _buildStatCard(
+                StatCard(
                   title: AppLocalizations.of(context).t('most_consumed_drink'),
                   value: _mostConsumedBeer!['name'],
-                  subtitle: '${_mostConsumedBeer!['count']}${AppLocalizations.of(context).t('times_drunk')}',
+                  subtitle:
+                      '${_mostConsumedBeer!['count']}${AppLocalizations.of(context).t('times_drunk')}',
                   icon: Icons.local_drink,
-                  color: const Color(0xFFFFD700),
+                  color: AppTheme.beerAccentGold,
                 ),
               if (_mostConsumedBeer != null) const SizedBox(height: 16),
-              
+
               // Diese Woche
-              if (_weekConsumption != null && _weekConsumption!['beerCount'] > 0)
-                _buildStatCard(
+              if (_weekConsumption != null &&
+                  _weekConsumption!['beerCount'] > 0)
+                StatCard(
                   title: AppLocalizations.of(context).t('this_week'),
-                  value: '${_weekConsumption!['beerCount']} ${AppLocalizations.of(context).t('beers')}',
-                  subtitle: '${_weekConsumption!['alcoholGrams'].toStringAsFixed(1)} ${AppLocalizations.of(context).t('g_alcohol')}',
+                  value:
+                      '${_weekConsumption!['beerCount']} ${AppLocalizations.of(context).t('beers')}',
+                  subtitle:
+                      '${_weekConsumption!['alcoholGrams'].toStringAsFixed(1)} ${AppLocalizations.of(context).t('g_alcohol')}',
                   icon: Icons.calendar_today,
                   color: Colors.blueAccent,
                 ),
-              if (_weekConsumption != null && _weekConsumption!['beerCount'] > 0) const SizedBox(height: 16),
-              
+              if (_weekConsumption != null &&
+                  _weekConsumption!['beerCount'] > 0)
+                const SizedBox(height: 16),
+
               // Durchschnitt
               if (_averagePerDay != null && _averagePerDay!['activeDays'] > 0)
-                _buildStatCard(
+                StatCard(
                   title: AppLocalizations.of(context).t('average_30_days'),
-                  value: '${_averagePerDay!['averagePerDay'].toStringAsFixed(1)} ${AppLocalizations.of(context).t('beers_per_day')}',
-                  subtitle: '${_averagePerDay!['activeDays']} ${AppLocalizations.of(context).t('active_days')}',
+                  value:
+                      '${_averagePerDay!['averagePerDay'].toStringAsFixed(1)} ${AppLocalizations.of(context).t('beers_per_day')}',
+                  subtitle:
+                      '${_averagePerDay!['activeDays']} ${AppLocalizations.of(context).t('active_days')}',
                   icon: Icons.bar_chart,
                   color: Colors.greenAccent,
                 ),
-              if (_averagePerDay != null && _averagePerDay!['activeDays'] > 0) const SizedBox(height: 16),
-              
+              if (_averagePerDay != null && _averagePerDay!['activeDays'] > 0)
+                const SizedBox(height: 16),
+
               // Gesamt
-              _buildStatCard(
+              StatCard(
                 title: AppLocalizations.of(context).t('total'),
-                value: '$_totalBeers ${AppLocalizations.of(context).t('beers')}',
+                value:
+                    '$_totalBeers ${AppLocalizations.of(context).t('beers')}',
                 subtitle: AppLocalizations.of(context).t('total_drunk'),
                 icon: Icons.emoji_events,
-                color: const Color(0xFFFFD700),
+                color: AppTheme.beerAccentGold,
               ),
             ] else ...[
               // Keine Daten
@@ -330,141 +347,23 @@ class _HomePageState extends State<HomePage> {
     return Row(
       children: [
         Expanded(
-          child: _buildQuickStatCard(
-            AppLocalizations.of(context).t('total'),
-            '$_totalBeers',
-            Icons.local_drink,
-            Colors.blueAccent,
+          child: QuickStatCard(
+            title: AppLocalizations.of(context).t('total'),
+            value: '$_totalBeers',
+            icon: Icons.local_drink,
+            color: Colors.blueAccent,
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildQuickStatCard(
-            AppLocalizations.of(context).t('this_week'),
-            '${_weekConsumption?['beerCount'] ?? 0}',
-            Icons.calendar_today,
-            Colors.greenAccent,
+          child: QuickStatCard(
+            title: AppLocalizations.of(context).t('this_week'),
+            value: '${_weekConsumption?['beerCount'] ?? 0}',
+            icon: Icons.calendar_today,
+            color: Colors.greenAccent,
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildQuickStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C1917),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: TextStyle(
-              color: Colors.grey[500],
-              fontSize: 11,
-              letterSpacing: 1.2,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard({
-    required String title,
-    required String value,
-    required String subtitle,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C1917),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: Colors.grey[400],
-                    fontSize: 12,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: Colors.grey[500],
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 

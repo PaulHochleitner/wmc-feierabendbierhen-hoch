@@ -2,59 +2,58 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../models/user_profile.dart';
+import '../models/consumed_beer.dart';
+import '../core/utils/alcohol_calculator.dart';
+import '../core/constants/app_constants.dart';
+import '../repositories/beer_repository.dart';
 
 class BeerStatsService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final BeerRepository _beerRepository = BeerRepository();
 
-  String? get userId => _auth.currentUser?.uid;
-
-  // Lade alle Bier-Einträge
-  Future<List<DocumentSnapshot>> getAllBeers() async {
-    if (userId == null) return [];
-    try {
-      final snapshot = await _db
-          .collection('users')
-          .doc(userId)
-          .collection('beers')
-          .orderBy('date', descending: false)
-          .get();
-      return snapshot.docs;
-    } catch (e) {
-      return [];
-    }
+  /// Lädt alle Bier-Einträge als ConsumedBeer-Liste
+  Future<List<ConsumedBeer>> getAllBeers() async {
+    return await _beerRepository.getAllBeers();
   }
 
-  // Berechne heutigen Konsum
-  Map<String, dynamic> getTodayConsumption(List<DocumentSnapshot> beers, UserProfile? profile) {
+  /// Lädt alle Bier-Einträge als DocumentSnapshot-Liste (für Kompatibilität)
+  Future<List<DocumentSnapshot>> getAllBeersAsSnapshots() async {
+    final beers = await getAllBeers();
+    // Konvertiere zurück zu DocumentSnapshots für bestehenden Code
+    // Dies ist eine temporäre Lösung während der Migration
+    return [];
+  }
+
+  /// Berechnet den heutigen Konsum
+  Map<String, dynamic> getTodayConsumption(
+    List<ConsumedBeer> beers,
+    UserProfile? profile,
+  ) {
     final today = DateTime.now();
     final todayKey = DateFormat('yyyy-MM-dd').format(today);
-    
+
     double totalAlcoholGrams = 0;
     int beerCount = 0;
-    double maxPromille = 0;
-    
-    for (var doc in beers) {
-      final data = doc.data() as Map<String, dynamic>;
-      final date = (data['date'] as Timestamp).toDate();
-      final dateKey = DateFormat('yyyy-MM-dd').format(date);
-      
+
+    for (var beer in beers) {
+      final dateKey = DateFormat('yyyy-MM-dd').format(beer.date);
+
       if (dateKey == todayKey) {
         beerCount++;
-        double alc = (data['percentage'] ?? 0.0).toDouble();
-        totalAlcoholGrams += 500 * (alc / 100.0) * 0.8;
+        totalAlcoholGrams += AlcoholCalculator.calculateAlcoholGrams(
+          beer.percentage,
+        );
       }
     }
-    
+
     // Promille berechnen
+    double maxPromille = 0;
     if (profile != null && totalAlcoholGrams > 0) {
-      double r = profile.gender == 'female' ? 0.55 : 0.68;
-      double weight = profile.weight;
-      if (weight > 0) {
-        maxPromille = totalAlcoholGrams / (weight * r);
-      }
+      maxPromille = AlcoholCalculator.calculatePromille(
+        totalAlcoholGrams,
+        profile,
+      );
     }
-    
+
     return {
       'beerCount': beerCount,
       'alcoholGrams': totalAlcoholGrams,
@@ -62,42 +61,56 @@ class BeerStatsService {
     };
   }
 
-  // Höchste Promille mit Datum
-  Map<String, dynamic>? getHighestPromille(List<DocumentSnapshot> beers, UserProfile? profile) {
+  /// Legacy-Methode für DocumentSnapshot-Kompatibilität
+  Map<String, dynamic> getTodayConsumptionFromSnapshots(
+    List<DocumentSnapshot> beers,
+    UserProfile? profile,
+  ) {
+    final consumedBeers = beers
+        .map((doc) => ConsumedBeer.fromFirestore(doc))
+        .toList();
+    return getTodayConsumption(consumedBeers, profile);
+  }
+
+  /// Berechnet die höchste Promille mit Datum
+  Map<String, dynamic>? getHighestPromille(
+    List<ConsumedBeer> beers,
+    UserProfile? profile,
+  ) {
     if (profile == null || beers.isEmpty) return null;
-    
-    double r = profile.gender == 'female' ? 0.55 : 0.68;
-    double weight = profile.weight;
-    if (weight <= 0) return null;
-    
-    Map<String, List<DocumentSnapshot>> beersByDay = {};
-    for (var doc in beers) {
-      final data = doc.data() as Map<String, dynamic>;
-      final date = (data['date'] as Timestamp).toDate();
-      final dateKey = DateFormat('yyyy-MM-dd').format(date);
-      beersByDay.putIfAbsent(dateKey, () => []).add(doc);
+
+    if (profile.weight <= 0) return null;
+
+    final Map<String, List<ConsumedBeer>> beersByDay = {};
+    for (var beer in beers) {
+      final dateKey = DateFormat('yyyy-MM-dd').format(beer.date);
+      beersByDay.putIfAbsent(dateKey, () => []).add(beer);
     }
-    
+
     double maxPromille = 0;
     String? maxDate;
-    
+
     beersByDay.forEach((dateKey, dailyBeers) {
       double dailyAlcoholGrams = 0;
-      for (var doc in dailyBeers) {
-        final data = doc.data() as Map<String, dynamic>;
-        double alc = (data['percentage'] ?? 0.0).toDouble();
-        dailyAlcoholGrams += 500 * (alc / 100.0) * 0.8;
+      for (var beer in dailyBeers) {
+        dailyAlcoholGrams += AlcoholCalculator.calculateAlcoholGrams(
+          beer.percentage,
+        );
       }
-      
-      double dailyPromille = dailyAlcoholGrams / (weight * r);
+
+      final dailyPromille = AlcoholCalculator.calculateDailyPromille(
+        dailyAlcoholGrams,
+        profile,
+      );
+
       if (dailyPromille > maxPromille) {
         maxPromille = dailyPromille;
         maxDate = dateKey;
       }
     });
-    
+
     if (maxDate == null) return null;
-    
+
     return {
       'promille': maxPromille,
       'date': maxDate!,
@@ -105,76 +118,102 @@ class BeerStatsService {
     };
   }
 
-  // Meist getrunkenes Getränk
-  Map<String, dynamic>? getMostConsumedBeer(List<DocumentSnapshot> beers) {
+  /// Legacy-Methode für DocumentSnapshot-Kompatibilität
+  Map<String, dynamic>? getHighestPromilleFromSnapshots(
+    List<DocumentSnapshot> beers,
+    UserProfile? profile,
+  ) {
+    final consumedBeers = beers
+        .map((doc) => ConsumedBeer.fromFirestore(doc))
+        .toList();
+    return getHighestPromille(consumedBeers, profile);
+  }
+
+  /// Findet das meist getrunkene Getränk
+  Map<String, dynamic>? getMostConsumedBeer(List<ConsumedBeer> beers) {
     if (beers.isEmpty) return null;
-    
-    Map<String, int> beerCounts = {};
-    
-    for (var doc in beers) {
-      final data = doc.data() as Map<String, dynamic>;
-      String name = data['name'] ?? 'Unbekannt';
-      beerCounts[name] = (beerCounts[name] ?? 0) + 1;
+
+    final Map<String, int> beerCounts = {};
+
+    for (var beer in beers) {
+      beerCounts[beer.name] = (beerCounts[beer.name] ?? 0) + 1;
     }
-    
+
     if (beerCounts.isEmpty) return null;
-    
-    String mostConsumed = beerCounts.entries
-        .reduce((a, b) => a.value > b.value ? a : b)
-        .key;
-    int count = beerCounts[mostConsumed]!;
-    
+
+    final mostConsumed = beerCounts.entries
+        .reduce((a, b) => a.value > b.value ? a : b);
+
     return {
-      'name': mostConsumed,
-      'count': count,
+      'name': mostConsumed.key,
+      'count': mostConsumed.value,
     };
   }
 
-  // Gesamtkonsum diese Woche
-  Map<String, dynamic> getWeekConsumption(List<DocumentSnapshot> beers, UserProfile? profile) {
+  /// Legacy-Methode für DocumentSnapshot-Kompatibilität
+  Map<String, dynamic>? getMostConsumedBeerFromSnapshots(
+    List<DocumentSnapshot> beers,
+  ) {
+    final consumedBeers = beers
+        .map((doc) => ConsumedBeer.fromFirestore(doc))
+        .toList();
+    return getMostConsumedBeer(consumedBeers);
+  }
+
+  /// Berechnet den Gesamtkonsum dieser Woche
+  Map<String, dynamic> getWeekConsumption(
+    List<ConsumedBeer> beers,
+    UserProfile? profile,
+  ) {
     final now = DateTime.now();
     final weekStart = now.subtract(Duration(days: now.weekday - 1));
-    
+
     int beerCount = 0;
     double totalAlcoholGrams = 0;
-    
-    for (var doc in beers) {
-      final data = doc.data() as Map<String, dynamic>;
-      final date = (data['date'] as Timestamp).toDate();
-      
-      if (date.isAfter(weekStart.subtract(const Duration(days: 1)))) {
+
+    for (var beer in beers) {
+      if (beer.date.isAfter(weekStart.subtract(const Duration(days: 1)))) {
         beerCount++;
-        double alc = (data['percentage'] ?? 0.0).toDouble();
-        totalAlcoholGrams += 500 * (alc / 100.0) * 0.8;
+        totalAlcoholGrams += AlcoholCalculator.calculateAlcoholGrams(
+          beer.percentage,
+        );
       }
     }
-    
+
     return {
       'beerCount': beerCount,
       'alcoholGrams': totalAlcoholGrams,
     };
   }
 
-  // Durchschnitt pro Tag (letzte 30 Tage)
-  Map<String, dynamic> getAveragePerDay(List<DocumentSnapshot> beers) {
+  /// Legacy-Methode für DocumentSnapshot-Kompatibilität
+  Map<String, dynamic> getWeekConsumptionFromSnapshots(
+    List<DocumentSnapshot> beers,
+    UserProfile? profile,
+  ) {
+    final consumedBeers = beers
+        .map((doc) => ConsumedBeer.fromFirestore(doc))
+        .toList();
+    return getWeekConsumption(consumedBeers, profile);
+  }
+
+  /// Berechnet den Durchschnitt pro Tag (letzte 30 Tage)
+  Map<String, dynamic> getAveragePerDay(List<ConsumedBeer> beers) {
     final now = DateTime.now();
     final thirtyDaysAgo = now.subtract(const Duration(days: 30));
-    
-    Map<String, int> beersByDay = {};
-    
-    for (var doc in beers) {
-      final data = doc.data() as Map<String, dynamic>;
-      final date = (data['date'] as Timestamp).toDate();
-      
-      if (date.isAfter(thirtyDaysAgo.subtract(const Duration(days: 1)))) {
-        final dateKey = DateFormat('yyyy-MM-dd').format(date);
+
+    final Map<String, int> beersByDay = {};
+
+    for (var beer in beers) {
+      if (beer.date.isAfter(thirtyDaysAgo.subtract(const Duration(days: 1)))) {
+        final dateKey = DateFormat('yyyy-MM-dd').format(beer.date);
         beersByDay[dateKey] = (beersByDay[dateKey] ?? 0) + 1;
       }
     }
-    
-    int activeDays = beersByDay.length;
-    int totalBeers = beersByDay.values.fold(0, (a, b) => a + b);
-    
+
+    final activeDays = beersByDay.length;
+    final totalBeers = beersByDay.values.fold(0, (a, b) => a + b);
+
     return {
       'activeDays': activeDays,
       'totalBeers': totalBeers,
@@ -182,8 +221,23 @@ class BeerStatsService {
     };
   }
 
-  // Gesamtanzahl Biere
-  int getTotalBeers(List<DocumentSnapshot> beers) {
+  /// Legacy-Methode für DocumentSnapshot-Kompatibilität
+  Map<String, dynamic> getAveragePerDayFromSnapshots(
+    List<DocumentSnapshot> beers,
+  ) {
+    final consumedBeers = beers
+        .map((doc) => ConsumedBeer.fromFirestore(doc))
+        .toList();
+    return getAveragePerDay(consumedBeers);
+  }
+
+  /// Gibt die Gesamtanzahl der Biere zurück
+  int getTotalBeers(List<ConsumedBeer> beers) {
+    return beers.length;
+  }
+
+  /// Legacy-Methode für DocumentSnapshot-Kompatibilität
+  int getTotalBeersFromSnapshots(List<DocumentSnapshot> beers) {
     return beers.length;
   }
 
