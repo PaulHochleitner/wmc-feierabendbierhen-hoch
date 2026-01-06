@@ -146,28 +146,34 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
     });
 
     try {
-      // Client-ID für alle Plattformen setzen
-      String? clientId;
+      // GoogleSignIn konfigurieren - Client-ID nur für iOS/macOS setzen
+      // Für Web und Android wird die Client-ID automatisch aus der Konfiguration gelesen
+      GoogleSignIn googleSignIn;
+      
       if (kIsWeb) {
-        // Web: Client-ID aus meta tag (wird automatisch gelesen, aber wir setzen sie trotzdem)
-        clientId =
-            '903834040298-pl04rrl645ov1pmk56vuvcn73b3uk28j.apps.googleusercontent.com';
+        // Web: Keine clientId setzen, wird automatisch aus HTML meta tag gelesen
+        googleSignIn = GoogleSignIn(
+          scopes: ['email'],
+        );
       } else if (defaultTargetPlatform == TargetPlatform.iOS ||
           defaultTargetPlatform == TargetPlatform.macOS) {
-        clientId = DefaultFirebaseOptions.ios.iosClientId;
-      } else if (defaultTargetPlatform == TargetPlatform.android) {
-        // Android Client-ID aus google-services.json
-        clientId =
-            '903834040298-pl04rrl645ov1pmk56vuvcn73b3uk28j.apps.googleusercontent.com';
+        // iOS/macOS: Client-ID aus Firebase Options verwenden
+        final iosClientId = DefaultFirebaseOptions.ios.iosClientId;
+        googleSignIn = GoogleSignIn(
+          scopes: ['email'],
+          clientId: iosClientId,
+        );
+      } else {
+        // Android: Keine clientId setzen, wird automatisch aus google-services.json gelesen
+        googleSignIn = GoogleSignIn(
+          scopes: ['email'],
+        );
       }
 
-      // Nur 'email' Scope verwenden, um People API zu vermeiden
-      // Firebase Auth hat bereits alle benötigten Informationen
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        scopes: ['email'],
-        clientId: clientId,
-      );
+      // Zuerst prüfen, ob bereits ein Account angemeldet ist und abmelden
+      await googleSignIn.signOut();
 
+      // Google Sign-In durchführen
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
       if (googleUser == null) {
@@ -178,15 +184,26 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
         return;
       }
 
+      // Authentifizierungsdaten abrufen
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
+
+      // Prüfen ob idToken vorhanden ist
+      if (googleAuth.idToken == null) {
+        throw Exception('Google Sign-In: idToken ist null. Bitte versuche es erneut.');
+      }
+
+      // Firebase Credential erstellen
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      await FirebaseAuth.instance.signInWithCredential(credential);
-      await AuthService.saveUserEmail(FirebaseAuth.instance.currentUser?.email);
+      // Bei Firebase anmelden
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      
+      // Email speichern und Guest-Modus deaktivieren
+      await AuthService.saveUserEmail(userCredential.user?.email);
       await AuthService.setGuestMode(false);
 
       // Prüfe ob Profil existiert
@@ -204,6 +221,31 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
           Navigator.of(context).pushReplacementNamed('/home');
         }
       }
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        String errorMsg = 'Google Sign-In fehlgeschlagen';
+        switch (e.code) {
+          case 'account-exists-with-different-credential':
+            errorMsg = 'Ein Account mit dieser Email existiert bereits mit einer anderen Anmeldemethode.';
+            break;
+          case 'invalid-credential':
+            errorMsg = 'Ungültige Anmeldedaten. Bitte versuche es erneut.';
+            break;
+          case 'operation-not-allowed':
+            errorMsg = 'Google Sign-In ist nicht aktiviert. Bitte kontaktiere den Support.';
+            break;
+          case 'user-disabled':
+            errorMsg = 'Dieser Account wurde deaktiviert.';
+            break;
+          case 'user-not-found':
+            errorMsg = 'Kein Account gefunden.';
+            break;
+          default:
+            errorMsg = 'Google Sign-In Fehler: ${e.message ?? e.code}';
+        }
+        _errorMessage = errorMsg;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         // Detailliertere Fehlermeldung
@@ -211,8 +253,10 @@ class _CustomLoginPageState extends State<CustomLoginPage> {
         if (e.toString().contains('People API')) {
           errorMsg =
               'Google Sign-In: People API ist nicht aktiviert. Bitte aktiviere sie in der Google Cloud Console oder verwende Email/Passwort Login.';
+        } else if (e.toString().contains('idToken')) {
+          errorMsg = 'Google Sign-In: Authentifizierung fehlgeschlagen. Bitte versuche es erneut.';
         } else {
-          errorMsg = 'Google Sign-In fehlgeschlagen: ${e.toString()}';
+          errorMsg = 'Google Sign-In Fehler: ${e.toString()}';
         }
         _errorMessage = errorMsg;
         _isLoading = false;

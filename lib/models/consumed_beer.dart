@@ -84,18 +84,26 @@ class ConsumedBeer {
     return latitude != null && longitude != null;
   }
 
-  /// Gibt das Länder-Emoji zurück (erste 2 Zeichen des country-Strings)
+  /// Gibt das Länder-Emoji zurück (erste 2 Unicode-Zeichen des country-Strings)
   String getCountryEmoji() {
-    if (country.length >= 2) {
-      return country.substring(0, 2);
+    if (country.isEmpty) return '';
+    // Emojis sind Unicode-Zeichen, die mehr als 1 Byte benötigen
+    // Wir nehmen die ersten 2 Zeichen (für Flaggen-Emojis wie 🇦🇹)
+    final runes = country.runes.toList();
+    if (runes.length >= 2) {
+      return String.fromCharCodes(runes.sublist(0, 2));
     }
-    return '';
+    return country.substring(0, 1);
   }
 
   /// Gibt den Länder-Namen zurück (ohne Emoji)
   String getCountryName() {
-    if (country.length > 3) {
-      return country.substring(3);
+    if (country.isEmpty) return '';
+    // Entferne die ersten 2 Unicode-Zeichen (Emoji) und das Leerzeichen
+    final runes = country.runes.toList();
+    if (runes.length > 2) {
+      // Überspringe Emoji (2 Zeichen) + Leerzeichen (1 Zeichen) = 3 Zeichen
+      return String.fromCharCodes(runes.sublist(3));
     }
     return country;
   }
