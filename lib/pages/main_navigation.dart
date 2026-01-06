@@ -5,16 +5,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:feierabendbierchen_flutter/services/beer_firestore_service.dart';
 import 'package:feierabendbierchen_flutter/models/user_profile.dart';
 import 'package:feierabendbierchen_flutter/pages/home/home_page.dart';
-import 'package:feierabendbierchen_flutter/pages/beer/beer_page.dart';
+import 'package:feierabendbierchen_flutter/pages/consumption/consumption_diary_page.dart';
 import 'package:feierabendbierchen_flutter/pages/statistik/statisitk_page.dart';
 import 'package:feierabendbierchen_flutter/pages/profile/profile_page.dart';
-import 'package:feierabendbierchen_flutter/pages/profile/login_page.dart';
+import 'package:feierabendbierchen_flutter/pages/profile/custom_login_page.dart';
 import 'package:feierabendbierchen_flutter/pages/profile/user_profile_setup_page.dart';
 
 class MyHomePage extends StatefulWidget {
   final bool isLoggedIn;
+  final bool isGuestMode;
 
-  const MyHomePage({super.key, required this.isLoggedIn});
+  const MyHomePage({super.key, required this.isLoggedIn, this.isGuestMode = false});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -96,17 +97,20 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
   void _showProfileSetupIfNeeded() {
     if (_needsProfileSetup && widget.isLoggedIn && !_isLoadingProfile) {
-      // Zeige Profil-Setup als Modal
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        isDismissible: false,
-        enableDrag: false,
-        builder: (context) => UserProfileSetupPage(
-          firestoreService: _firestoreService,
-          onProfileComplete: _onProfileComplete,
-        ),
-      );
+      // Zeige Profil-Setup als normale Seite (nicht wegslidbar)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => UserProfileSetupPage(
+                firestoreService: _firestoreService,
+                onProfileComplete: _onProfileComplete,
+              ),
+            ),
+          );
+        }
+      });
     }
   }
 
@@ -149,8 +153,16 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       // Eingeloggt: Home, Bier, Profile
       pages = [
         const HomePage(),
-        const BeerPage(), // Bier-Seite immer anzeigen, unabhängig vom Profil
+        const ConsumptionDiaryPage(), // Konsum-Tagebuch
         const StatistikPage(),
+        const ProfilePage(),
+      ];
+    } else if (widget.isGuestMode) {
+      // Gast-Modus: Home, Bier (eingeschränkt), Stats (eingeschränkt), Profile
+      pages = [
+        const HomePage(),
+        _buildGuestBeerPlaceholder(),
+        _buildGuestStatsPlaceholder(),
         const ProfilePage(),
       ];
     } else {
@@ -164,17 +176,21 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     }
 
     void onItemTapped(int index) {
-      if (!widget.isLoggedIn) {
-        // Nicht eingeloggt: Index 0=Home, 1=Bier(Login), 2=Stats, 3=Profile
+      if (!widget.isLoggedIn && !widget.isGuestMode) {
+        // Nicht eingeloggt und nicht Gast: Index 0=Home, 1=Bier(Login), 2=Stats, 3=Profile
         if (index == 1 || index == 2) {
           setState(() => _selectedIndex = 1); // Bier-Tab aktiv lassen
           // Hinweis/Login öffnen
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const LoginPage()),
+            MaterialPageRoute(builder: (context) => const CustomLoginPage()),
           );
           return;
         }
+      } else if (widget.isGuestMode && (index == 1 || index == 2)) {
+        // Gast-Modus: Zeige Hinweis dass Login erforderlich für volle Funktion
+        setState(() => _selectedIndex = index);
+        return;
       }
       
       setState(() {
@@ -182,8 +198,9 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       });
     }
 
+    // Bottom bar soll nicht mehr transparent sein, damit der Add-Button nicht verdeckt wird.
     return Scaffold(
-      extendBody: true, // Important for transparent bottom bar
+      extendBody: false,
       appBar: AppBar(
         title: const Text("FEIERABEND BIERCHEN", style: TextStyle(color: Colors.black)),
         centerTitle: true,
@@ -238,7 +255,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF12100E).withOpacity(0.95),
+          color: const Color(0xFF12100E), // volle Deckkraft
           border: Border(top: BorderSide(color: const Color(0xFF8D6E63).withOpacity(0.3))),
           boxShadow: [
             BoxShadow(
@@ -252,7 +269,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
           currentIndex: _selectedIndex,
           onTap: onItemTapped,
           type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.transparent,
+          backgroundColor: const Color(0xFF12100E),
           elevation: 0,
           selectedItemColor: const Color(0xFFFFD700),
           unselectedItemColor: Colors.grey[600],
@@ -311,7 +328,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const LoginPage()),
+                MaterialPageRoute(builder: (context) => const CustomLoginPage()),
               );
             },
             icon: const Icon(Icons.login),
@@ -325,5 +342,146 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         ],
       ),
     );
+  }
+
+  // Platzhalter für Gast-Modus (Bier)
+  Widget _buildGuestBeerPlaceholder() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.local_drink,
+            size: 64,
+            color: const Color(0xFFFFD700),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'GAST-MODUS 🍺',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFFFFD700),
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Im Gast-Modus werden deine Daten nicht gespeichert.\nErstelle einen Account für vollständige Funktionen.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey[400]),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CustomLoginPage()),
+              );
+            },
+            icon: const Icon(Icons.person_add),
+            label: const Text('ACCOUNT ERSTELLEN'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFD700).withOpacity(0.1),
+              foregroundColor: const Color(0xFFFFD700),
+              side: const BorderSide(color: Color(0xFF8D6E63)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Platzhalter für Gast-Modus (Stats)
+  Widget _buildGuestStatsPlaceholder() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.bar_chart,
+            size: 64,
+            color: const Color(0xFFFFD700),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'GAST-MODUS 📊',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFFFFD700),
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Statistiken sind nur mit Account verfügbar.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey[400]),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CustomLoginPage()),
+              );
+            },
+            icon: const Icon(Icons.person_add),
+            label: const Text('ACCOUNT ERSTELLEN'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFD700).withOpacity(0.1),
+              foregroundColor: const Color(0xFFFFD700),
+              side: const BorderSide(color: Color(0xFF8D6E63)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Bubble-Klasse für Animation
+class Bubble {
+  final double x;
+  final double y;
+  final double size;
+  final double speed;
+
+  Bubble({required this.x, required this.y, required this.size, required this.speed});
+}
+
+// BubblePainter für CustomPainter
+class BubblePainter extends CustomPainter {
+  final List<Bubble> bubbles;
+  final double animationValue;
+
+  BubblePainter({required this.bubbles, required this.animationValue});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.3)
+      ..style = PaintingStyle.fill;
+
+    for (var bubble in bubbles) {
+      // Berechne Y-Position basierend auf Animation (Looping)
+      // Wir addieren animationValue * speed zur ursprünglichen Y und nehmen Modulo 1
+      // Da wir wollen, dass sie nach OBEN steigen, subtrahieren wir.
+      double currentY = (bubble.y - (animationValue * bubble.speed)) % 1.0;
+      if (currentY < 0) currentY += 1.0;
+
+      // Zeichne Blase
+      canvas.drawCircle(
+        Offset(bubble.x * size.width, currentY * size.height),
+        bubble.size,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant BubblePainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue;
   }
 }

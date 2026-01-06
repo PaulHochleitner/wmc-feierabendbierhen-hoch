@@ -19,6 +19,9 @@ class MyApp extends StatelessWidget {
       title: 'FeierabendBierchen',
       theme: _buildBeerTheme(),
       home: const AuthGate(),
+      routes: {
+        '/home': (context) => const AuthGate(),
+      },
     );
   }
 

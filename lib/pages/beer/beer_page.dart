@@ -4,15 +4,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class BeerPage extends StatefulWidget {
-  const BeerPage({super.key});
+  final ConsumedBeer? existingBeer;
+  final VoidCallback? onSaved;
+
+  const BeerPage({super.key, this.existingBeer, this.onSaved});
 
   @override
   State<BeerPage> createState() => _BeerPageState();
 }
 
-class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin {
+class _BeerPageState extends State<BeerPage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  
+
   // Bier-Datenbank
   final Map<String, List<Map<String, dynamic>>> _beerDatabase = {
     "🇦🇹 Österreich": [
@@ -82,6 +86,13 @@ class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin
       vsync: this,
       duration: const Duration(seconds: 4),
     )..repeat();
+
+    // Öffne Dialog automatisch wenn existingBeer gesetzt ist
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.existingBeer != null) {
+        _showAddBeerDialog();
+      }
+    });
   }
 
   @override
@@ -91,23 +102,26 @@ class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin
   }
 
   void _showAddBeerDialog({ConsumedBeer? existingBeer}) {
-    String? selectedCountry = existingBeer?.country;
+    final beerToEdit = existingBeer ?? widget.existingBeer;
+    String? selectedCountry = beerToEdit?.country;
     Map<String, dynamic>? selectedBeerData;
 
-    if (existingBeer != null && selectedCountry != null) {
+    if (beerToEdit != null && selectedCountry != null) {
       // Suche das exakte Map-Objekt in der Datenbank für die Referenz-Gleichheit im Dropdown
       final beers = _beerDatabase[selectedCountry];
       if (beers != null) {
         try {
-          selectedBeerData = beers.firstWhere((b) => b['name'] == existingBeer.name);
+          selectedBeerData = beers.firstWhere(
+            (b) => b['name'] == beerToEdit.name,
+          );
         } catch (_) {
           // Falls nicht gefunden (z.B. Name geändert), bleibt es null
         }
       }
     }
 
-    double rating = existingBeer?.rating.toDouble() ?? 5.0;
-    DateTime selectedDate = existingBeer?.date ?? DateTime.now();
+    double rating = beerToEdit?.rating.toDouble() ?? 5.0;
+    DateTime selectedDate = beerToEdit?.date ?? DateTime.now();
 
     showModalBottomSheet(
       context: context,
@@ -122,17 +136,19 @@ class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin
           builder: (context, setModalState) {
             return Padding(
               padding: EdgeInsets.only(
-                left: 20, 
-                right: 20, 
-                top: 20, 
-                bottom: MediaQuery.of(context).viewInsets.bottom + 20
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    existingBeer != null ? "BIER BEARBEITEN" : "NEUES BIER ZAPFEN",
+                    existingBeer != null
+                        ? "BIER BEARBEITEN"
+                        : "NEUES BIER ZAPFEN",
                     style: const TextStyle(
                       color: Color(0xFFFFD700),
                       fontSize: 20,
@@ -141,10 +157,10 @@ class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin
                     ),
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Land Auswahl
                   DropdownButtonFormField<String>(
-                    value: selectedCountry,
+                    initialValue: selectedCountry,
                     dropdownColor: const Color(0xFF2D241E),
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
@@ -168,7 +184,8 @@ class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin
                     onChanged: (value) {
                       setModalState(() {
                         selectedCountry = value;
-                        selectedBeerData = null; // Reset beer when country changes
+                        selectedBeerData =
+                            null; // Reset beer when country changes
                       });
                     },
                   ),
@@ -176,7 +193,8 @@ class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin
 
                   // Bier Auswahl
                   DropdownButtonFormField<Map<String, dynamic>>(
-                    value: selectedBeerData, // Hier müsste man eigentlich das Objekt matchen, vereinfacht
+                    initialValue:
+                        selectedBeerData, // Hier müsste man eigentlich das Objekt matchen, vereinfacht
                     isExpanded: true,
                     dropdownColor: const Color(0xFF2D241E),
                     style: const TextStyle(color: Colors.white),
@@ -192,24 +210,26 @@ class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    items: selectedCountry == null 
-                        ? [] 
+                    items: selectedCountry == null
+                        ? []
                         : _beerDatabase[selectedCountry]!.map((beer) {
                             return DropdownMenuItem<Map<String, dynamic>>(
                               value: beer,
                               child: Text(
-                                beer['name'], 
+                                beer['name'],
                                 overflow: TextOverflow.ellipsis,
                               ),
                             );
                           }).toList(),
-                    onChanged: selectedCountry == null ? null : (value) {
-                      setModalState(() {
-                        selectedBeerData = value;
-                      });
-                    },
+                    onChanged: selectedCountry == null
+                        ? null
+                        : (value) {
+                            setModalState(() {
+                              selectedBeerData = value;
+                            });
+                          },
                   ),
-                  
+
                   if (selectedBeerData != null) ...[
                     const SizedBox(height: 16),
                     Container(
@@ -217,15 +237,23 @@ class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFD700).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
+                        border: Border.all(
+                          color: const Color(0xFFFFD700).withOpacity(0.3),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.info_outline, color: Color(0xFFFFD700)),
+                          const Icon(
+                            Icons.info_outline,
+                            color: Color(0xFFFFD700),
+                          ),
                           const SizedBox(width: 10),
                           Text(
                             "Alkoholgehalt: ${selectedBeerData!['alc'].toString()} %",
-                            style: const TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Color(0xFFFFD700),
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
@@ -233,7 +261,7 @@ class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin
                   ],
 
                   const SizedBox(height: 16),
-                  
+
                   // Datum Auswahl
                   InkWell(
                     onTap: () async {
@@ -251,7 +279,9 @@ class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin
                                 surface: Color(0xFF1F1B16),
                                 onSurface: Colors.white,
                               ),
-                              dialogBackgroundColor: const Color(0xFF1F1B16),
+                              dialogTheme: DialogThemeData(
+                                backgroundColor: const Color(0xFF1F1B16),
+                              ),
                             ),
                             child: child!,
                           );
@@ -271,11 +301,17 @@ class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.calendar_today, color: Color(0xFFFFD700)),
+                          const Icon(
+                            Icons.calendar_today,
+                            color: Color(0xFFFFD700),
+                          ),
                           const SizedBox(width: 12),
                           Text(
                             "Datum: ${selectedDate.day}.${selectedDate.month}.${selectedDate.year}",
-                            style: const TextStyle(color: Colors.white, fontSize: 16),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
                           ),
                         ],
                       ),
@@ -283,11 +319,14 @@ class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin
                   ),
 
                   const SizedBox(height: 24),
-                  
+
                   // Bewertung
                   Text(
                     "GESCHMACK (1-10): ${rating.toInt()}",
-                    style: const TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Color(0xFFD4AF37),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
@@ -309,46 +348,61 @@ class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin
                   ),
 
                   const SizedBox(height: 24),
-                  
+
                   // Buttons
                   Row(
                     children: [
                       Expanded(
                         flex: 2,
                         child: ElevatedButton(
-                          onPressed: (selectedCountry != null && selectedBeerData != null) ? () async {
-                            final user = FirebaseAuth.instance.currentUser;
-                            if (user == null) return;
+                          onPressed:
+                              (selectedCountry != null &&
+                                  selectedBeerData != null)
+                              ? () async {
+                                  final user =
+                                      FirebaseAuth.instance.currentUser;
+                                  if (user == null) return;
 
-                            final beerData = ConsumedBeer(
-                              name: selectedBeerData!['name'],
-                              country: selectedCountry!,
-                              percentage: selectedBeerData!['alc'],
-                              rating: rating.toInt(),
-                              date: selectedDate,
-                            ).toMap();
-                            
-                            final collection = FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(user.uid)
-                                .collection('beers');
+                                  final beerData = ConsumedBeer(
+                                    name: selectedBeerData!['name'],
+                                    country: selectedCountry!,
+                                    percentage: selectedBeerData!['alc'],
+                                    rating: rating.toInt(),
+                                    date: selectedDate,
+                                  ).toMap();
 
-                            if (existingBeer != null && existingBeer.id != null) {
-                              // Update existing
-                              await collection.doc(existingBeer.id).update(beerData);
-                            } else {
-                              // Add new
-                              await collection.add(beerData);
-                            }
+                                  final collection = FirebaseFirestore.instance
+                                      .collection('users')
+                                      .doc(user.uid)
+                                      .collection('beers');
 
-                            Navigator.pop(context);
-                          } : null,
+                                  final beerToUpdate =
+                                      existingBeer ?? widget.existingBeer;
+                                  if (beerToUpdate != null &&
+                                      beerToUpdate.id != null) {
+                                    // Update existing
+                                    await collection
+                                        .doc(beerToUpdate.id)
+                                        .update(beerData);
+                                  } else {
+                                    // Add new
+                                    await collection.add(beerData);
+                                  }
+
+                                  if (widget.onSaved != null) {
+                                    widget.onSaved!();
+                                  }
+                                  Navigator.pop(context);
+                                }
+                              : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFFFD700),
                             foregroundColor: Colors.black,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: Text(existingBeer != null ? "SPEICHERN" : "HINZUFÜGEN"),
+                          child: Text(
+                            existingBeer != null ? "SPEICHERN" : "HINZUFÜGEN",
+                          ),
                         ),
                       ),
                     ],
@@ -365,7 +419,8 @@ class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return const SizedBox(); // Should not happen due to AuthGate
+    if (user == null)
+      return const SizedBox(); // Should not happen due to AuthGate
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -378,14 +433,21 @@ class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return const Center(child: Text("Fehler beim Laden", style: TextStyle(color: Colors.white)));
+            return const Center(
+              child: Text(
+                "Fehler beim Laden",
+                style: TextStyle(color: Colors.white),
+              ),
+            );
           }
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFFFFD700)));
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFFFFD700)),
+            );
           }
 
           final docs = snapshot.data?.docs ?? [];
-          
+
           if (docs.isEmpty) {
             return Center(
               child: Column(
@@ -399,7 +461,9 @@ class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFFFC107).withOpacity(0.3 * _controller.value),
+                              color: const Color(
+                                0xFFFFC107,
+                              ).withOpacity(0.3 * _controller.value),
                               blurRadius: 10 + (15 * _controller.value),
                               spreadRadius: 2 + (5 * _controller.value),
                             ),
@@ -449,28 +513,28 @@ class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin
           }
 
           return ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: docs.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 16),
-              itemBuilder: (context, index) {
-                final beer = ConsumedBeer.fromFirestore(docs[index]);
-                return BeerListTile(
-                  beer: beer,
-                  animation: _controller,
-                  onEdit: () => _showAddBeerDialog(existingBeer: beer),
-                  onDelete: () async {
-                     if (beer.id != null) {
-                        await FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(user.uid)
-                            .collection('beers')
-                            .doc(beer.id)
-                            .delete();
-                     }
-                  },
-                );
-              },
-            );
+            padding: const EdgeInsets.all(16),
+            itemCount: docs.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 16),
+            itemBuilder: (context, index) {
+              final beer = ConsumedBeer.fromFirestore(docs[index]);
+              return BeerListTile(
+                beer: beer,
+                animation: _controller,
+                onEdit: () => _showAddBeerDialog(existingBeer: beer),
+                onDelete: () async {
+                  if (beer.id != null) {
+                    await FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(user.uid)
+                        .collection('beers')
+                        .doc(beer.id)
+                        .delete();
+                  }
+                },
+              );
+            },
+          );
         },
       ),
       floatingActionButton: Padding(
@@ -480,7 +544,10 @@ class _BeerPageState extends State<BeerPage> with SingleTickerProviderStateMixin
           backgroundColor: const Color(0xFFFFD700),
           foregroundColor: Colors.black,
           icon: const Icon(Icons.add),
-          label: const Text("BIER HINZUFÜGEN", style: TextStyle(fontWeight: FontWeight.bold)),
+          label: const Text(
+            "BIER HINZUFÜGEN",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
         ),
       ),
     );
@@ -554,172 +621,181 @@ class _BeerListTileState extends State<BeerListTile> {
     super.initState();
     // Generiere zufällige Blasen für diesen Balken
     for (int i = 0; i < 15; i++) {
-      _bubbles.add(Bubble(
-        x: _random.nextDouble(),
-        y: _random.nextDouble(),
-        size: 2 + _random.nextDouble() * 4,
-        speed: 0.3 + _random.nextDouble() * 0.7,
-      ));
+      _bubbles.add(
+        Bubble(
+          x: _random.nextDouble(),
+          y: _random.nextDouble(),
+          size: 2 + _random.nextDouble() * 4,
+          speed: 0.3 + _random.nextDouble() * 0.7,
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-        height: 80,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFD4AF37), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(15),
-          child: Stack(
-            children: [
-              // 1. Bier Hintergrund (Gradient)
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      Color(0xFFFFA000), // Dunkles Amber
-                      Color(0xFFFFC107), // Gold
-                    ],
-                  ),
-                ),
-              ),
-              
-              // 2. Blasen Animation
-              AnimatedBuilder(
-                animation: widget.animation,
-                builder: (context, child) {
-                  return CustomPaint(
-                    painter: BubblePainter(
-                      bubbles: _bubbles,
-                      animationValue: widget.animation.value,
-                    ),
-                    size: Size.infinite,
-                  );
-                },
-              ),
-
-              // 3. Inhalt
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    // Icon / Flagge (Platzhalter)
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          widget.beer.country.split(' ')[0], // Nimmt das Emoji
-                          style: const TextStyle(fontSize: 24),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    
-                    // Text Infos
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            widget.beer.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Text(
-                                widget.beer.country.substring(3), // Ohne Emoji
-                                style: TextStyle(
-                                  color: Colors.black.withOpacity(0.6),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Icon(Icons.star, size: 12, color: Colors.black.withOpacity(0.6)),
-                              Text(
-                                " ${widget.beer.rating}/10",
-                                style: TextStyle(
-                                  color: Colors.black.withOpacity(0.6),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                "${widget.beer.date.day}.${widget.beer.date.month}.${widget.beer.date.year}",
-                                style: TextStyle(
-                                  color: Colors.black.withOpacity(0.5),
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    // Prozent Anzeige
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        "${widget.beer.percentage}%",
-                        style: const TextStyle(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ),
-                    
-                    // Buttons
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.black54),
-                          onPressed: widget.onEdit,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.redAccent),
-                          onPressed: widget.onDelete,
-                        ),
-                      ],
-                    ),
+      height: 80,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFD4AF37), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: Stack(
+          children: [
+            // 1. Bier Hintergrund (Gradient)
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Color(0xFFFFA000), // Dunkles Amber
+                    Color(0xFFFFC107), // Gold
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+
+            // 2. Blasen Animation
+            AnimatedBuilder(
+              animation: widget.animation,
+              builder: (context, child) {
+                return CustomPaint(
+                  painter: BubblePainter(
+                    bubbles: _bubbles,
+                    animationValue: widget.animation.value,
+                  ),
+                  size: Size.infinite,
+                );
+              },
+            ),
+
+            // 3. Inhalt
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  // Icon / Flagge (Platzhalter)
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        widget.beer.country.split(' ')[0], // Nimmt das Emoji
+                        style: const TextStyle(fontSize: 24),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+
+                  // Text Infos
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          widget.beer.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Text(
+                              widget.beer.country.substring(3), // Ohne Emoji
+                              style: TextStyle(
+                                color: Colors.black.withOpacity(0.6),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.star,
+                              size: 12,
+                              color: Colors.black.withOpacity(0.6),
+                            ),
+                            Text(
+                              " ${widget.beer.rating}/10",
+                              style: TextStyle(
+                                color: Colors.black.withOpacity(0.6),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "${widget.beer.date.day}.${widget.beer.date.month}.${widget.beer.date.year}",
+                              style: TextStyle(
+                                color: Colors.black.withOpacity(0.5),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Prozent Anzeige
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      "${widget.beer.percentage}%",
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+
+                  // Buttons
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.black54),
+                        onPressed: widget.onEdit,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.redAccent),
+                        onPressed: widget.onDelete,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
+      ),
     );
   }
 }
@@ -730,7 +806,12 @@ class Bubble {
   final double size;
   final double speed;
 
-  Bubble({required this.x, required this.y, required this.size, required this.speed});
+  Bubble({
+    required this.x,
+    required this.y,
+    required this.size,
+    required this.speed,
+  });
 }
 
 class BubblePainter extends CustomPainter {
